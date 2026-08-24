@@ -1,4 +1,4 @@
-/* FEET Lab — 공통 스크립트 v3 (ES5) */
+/* FEET Lab — 공통 스크립트 v4 (ES5, 성능 최적화) */
 (function () {
   'use strict';
 
@@ -34,7 +34,12 @@
       else if (y <= 12 && stuck) top.className = top.className.replace(' stuck', '');
     }
   }
-  window.addEventListener('scroll', onScroll, { passive: true });
+  var ticking = false;
+  window.addEventListener('scroll', function () {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { onScroll(); ticking = false; });
+  }, { passive: true });
   onScroll();
 
   /* ---------- 스크롤 리빌 (형제 요소는 시차를 두고) ---------- */
@@ -59,16 +64,25 @@
     for (i = 0; i < items.length; i++) items[i].className += ' on';
   }
 
-  /* ---------- 카드 스포트라이트 ---------- */
-  if (!reduced) {
+  /* ---------- 카드 스포트라이트 (마우스 기기 전용) ---------- */
+  var finePointer = true;
+  try { finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches; } catch (e) {}
+  if (!reduced && finePointer) {
     var cards = document.querySelectorAll('.pillar, .proj, .pub-card, .pub-mini, .topic, .join-card, .life-card, .person, .prof-card, .mailbox');
     for (i = 0; i < cards.length; i++) {
       if (cards[i].className.indexOf('sl') < 0) cards[i].className += ' sl';
       cards[i].addEventListener('mousemove', function (e) {
-        var r = this.getBoundingClientRect();
-        this.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-        this.style.setProperty('--my', (e.clientY - r.top) + 'px');
-      });
+        var el = this;
+        if (el._slq) return;
+        el._slq = true;
+        var cx = e.clientX, cy = e.clientY;
+        requestAnimationFrame(function () {
+          var r = el.getBoundingClientRect();
+          el.style.setProperty('--mx', (cx - r.left) + 'px');
+          el.style.setProperty('--my', (cy - r.top) + 'px');
+          el._slq = false;
+        });
+      }, { passive: true });
     }
   }
 
@@ -99,7 +113,10 @@
 
   /* ---------- 히어로 입자 (대기 미세입자 + 측정 스캔) ---------- */
   var cv = document.getElementById('fx');
-  if (cv && cv.getContext && !reduced) {
+  var narrow = false, weak = false;
+  try { narrow = window.matchMedia('(max-width: 767px)').matches; } catch (e) {}
+  try { weak = (navigator.hardwareConcurrency || 8) <= 2; } catch (e) {}
+  if (cv && cv.getContext && !reduced && !narrow && !weak) {
     var ctx = cv.getContext('2d');
     var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
     var ps = [];
@@ -116,7 +133,7 @@
     }
     function seed() {
       ps = [];
-      var n = Math.max(30, Math.min(76, Math.round(W * H / 24000)));
+      var n = Math.max(26, Math.min(58, Math.round(W * H / 30000)));
       for (var k = 0; k < n; k++) {
         ps.push({
           x: Math.random() * W, y: Math.random() * H,
@@ -132,16 +149,32 @@
     function tick() {
       ctx.clearRect(0, 0, W, H);
       var p, k, dx, dy, d;
-      /* 가까운 입자끼리 실선 연결 */
+      /* 가까운 입자끼리 실선 연결 — 격자로 나눠 이웃만 비교 */
+      var CELL = 110, grid = {}, key, gx, gy, m, q, cell, ox, oy;
       for (k = 0; k < ps.length; k++) {
-        for (var m = k + 1; m < ps.length; m++) {
-          dx = ps[k].x - ps[m].x; dy = ps[k].y - ps[m].y;
-          d = dx * dx + dy * dy;
-          if (d < 12000) {
-            ctx.beginPath();
-            ctx.moveTo(ps[k].x, ps[k].y); ctx.lineTo(ps[m].x, ps[m].y);
-            ctx.strokeStyle = 'rgba(29,79,134,' + (0.075 * (1 - d / 12000)) + ')';
-            ctx.lineWidth = 1; ctx.stroke();
+        gx = (ps[k].x / CELL) | 0; gy = (ps[k].y / CELL) | 0;
+        key = gx + ':' + gy;
+        (grid[key] || (grid[key] = [])).push(k);
+      }
+      ctx.lineWidth = 1;
+      for (k = 0; k < ps.length; k++) {
+        gx = (ps[k].x / CELL) | 0; gy = (ps[k].y / CELL) | 0;
+        for (ox = 0; ox <= 1; ox++) {
+          for (oy = (ox === 0 ? 0 : -1); oy <= 1; oy++) {
+            cell = grid[(gx + ox) + ':' + (gy + oy)];
+            if (!cell) continue;
+            for (q = 0; q < cell.length; q++) {
+              m = cell[q];
+              if (m <= k) continue;
+              dx = ps[k].x - ps[m].x; dy = ps[k].y - ps[m].y;
+              d = dx * dx + dy * dy;
+              if (d < 12000) {
+                ctx.beginPath();
+                ctx.moveTo(ps[k].x, ps[k].y); ctx.lineTo(ps[m].x, ps[m].y);
+                ctx.strokeStyle = 'rgba(29,79,134,' + (0.075 * (1 - d / 12000)) + ')';
+                ctx.stroke();
+              }
+            }
           }
         }
       }
@@ -174,13 +207,31 @@
         ctx.arc(p.x, p.y, 2.4, 0, 6.2832);
         ctx.fillStyle = 'rgba(79,130,38,0.9)'; ctx.fill();
       }
-      requestAnimationFrame(tick);
+      if (running) requestAnimationFrame(tick);
     }
-    window.addEventListener('resize', function () { resize(); seed(); });
+
+    /* 히어로가 화면 밖이거나 탭이 숨겨지면 정지 */
+    var running = true;
+    function start() { if (!running) { running = true; requestAnimationFrame(tick); } }
+    function stop() { running = false; }
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (en) {
+        if (en[0].isIntersecting) start(); else stop();
+      }, { threshold: 0 }).observe(cv.parentNode);
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stop(); else start();
+    });
+
+    var rt;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { resize(); seed(); }, 150);
+    }, { passive: true });
     document.addEventListener('mousemove', function (e) {
       var rect = cv.getBoundingClientRect();
       mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top;
-    });
+    }, { passive: true });
     resize(); seed(); tick();
   }
 

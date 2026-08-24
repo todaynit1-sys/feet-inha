@@ -11,20 +11,27 @@
 <meta property="og:image" content="https://REPLACE-ME.github.io/feet-lab/images/og.png">
 <meta property="og:url" content="https://REPLACE-ME.github.io/feet-lab/">
 <link rel="icon" type="image/png" href="images/favicon.png">
+<meta name="theme-color" content="#F6F9FC">
+<meta name="format-detection" content="telephone=no">
+<link rel="canonical" href="https://REPLACE-ME.github.io/feet-lab/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="preload" as="image" href="images/logo-mark.png">
+<link rel="stylesheet" href="assets/style.css?v=8">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"ResearchOrganization","name":"FEET Lab — Fine Energy & Environment Technology Laboratory","alternateName":"인하대학교 전기준 교수 연구실","url":"https://REPLACE-ME.github.io/feet-lab/","logo":"https://REPLACE-ME.github.io/feet-lab/images/logo-mark.png","parentOrganization":{"@type":"CollegeOrUniversity","name":"Inha University","url":"https://www.inha.ac.kr/"},"address":{"@type":"PostalAddress","streetAddress":"인하로 100","addressLocality":"인천광역시 미추홀구","addressCountry":"KR"},"email":"kjjeon@inha.ac.kr","employee":{"@type":"Person","name":"Ki-Joon Jeon","jobTitle":"Professor","email":"kjjeon@inha.ac.kr","affiliation":{"@type":"CollegeOrUniversity","name":"Inha University"}},"knowsAbout":["Black carbon","Airborne microplastics","Mobile air quality monitoring","Nanoparticle analysis","Electrocatalyst","2D materials"]}</script>
 </head>
 <body>
 
+<a class="skip" href="#main">본문으로 건너뛰기</a>
 <div id="bar" aria-hidden="true"></div>
 
 <header class="top">
   <div class="wrap top-in">
     <a class="brand" href="index.html" aria-label="FEET Lab 홈">
-      <img src="images/logo-mark.png" alt="" width="34" height="31">
+      <img src="images/logo-mark.png" alt="" width="34" height="31" decoding="async">
       <span><b>FEET LAB</b><i>Fine Energy &amp; Environment Technology</i></span>
     </a>
     <button class="burger" aria-label="메뉴 열기" aria-expanded="false"><span></span></button>
@@ -38,7 +45,7 @@
   </div>
 </header>
 
-<main>
+<main id="main">
 
   <!-- 히어로 -->
   <section class="hero" aria-label="소개">
@@ -58,7 +65,7 @@
       <div class="hero-art" aria-hidden="true">
         <span class="ring r2"></span>
         <span class="ring r1"></span>
-        <img src="images/logo-mark.png" alt="">
+        <img src="images/logo-mark.png" alt="" width="320" height="291" fetchpriority="high" decoding="async">
       </div>
     </div>
     <div class="wrap hero-btm">
@@ -112,15 +119,6 @@
     </div>
   </section>
 
-  <!-- 숫자 -->
-  <section class="stats" aria-label="연구실 현황">
-    <div class="wrap stats-grid">
-      <div class="rv"><b data-count="13" data-suffix="명">13명</b><span>연구실 식구</span><small>교수님 포함</small></div>
-      <div class="rv"><b data-count="4" data-suffix="건">4건</b><span>진행 중인 과제</span><small>2026년 기준</small></div>
-      <div class="rv"><b data-count="2" data-suffix="갈래">2갈래</b><span>독립된 연구 방향</span><small>Atmosphere · Material</small></div>
-      <div class="rv"><b>2013~</b><span>인하대에 자리 잡은 해</span><small>환경공학과</small></div>
-    </div>
-  </section>
 
   <!-- 진행 중 프로젝트 -->
   <section aria-labelledby="proj-h">
@@ -236,7 +234,7 @@
     <div class="foot-in">
       <div>
         <div class="foot-brand">
-          <img src="images/logo-mark.png" alt="" width="32" height="29">
+          <img src="images/logo-mark.png" alt="" width="32" height="29" loading="lazy" decoding="async">
           <b>FEET LAB</b>
         </div>
         <p>Fine Energy &amp; Environment Technology Lab<br>인하대학교 환경공학과 · 전기준 교수 연구실<br>
@@ -255,6 +253,6 @@
   </div>
 </footer>
 
-<script src="assets/site.js"></script>
+<script src="assets/site.js?v=8" defer></script>
 </body>
 </html>
