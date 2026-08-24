@@ -103,7 +103,7 @@
     var ctx = cv.getContext('2d');
     var W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
     var ps = [];
-    var COLORS = ['rgba(108,172,246,', 'rgba(152,220,88,', 'rgba(255,255,255,'];
+    var COLORS = ['rgba(29,79,134,', 'rgba(107,160,58,', 'rgba(19,33,51,'];
     var mouse = { x: -9999, y: -9999 };
     var scan = { t: 0, idx: 0 };
 
@@ -124,7 +124,7 @@
           vx: (Math.random() - 0.5) * 0.2,
           vy: (Math.random() - 0.5) * 0.16 - 0.03,
           c: COLORS[k % 3],
-          a: 0.12 + Math.random() * 0.32,
+          a: 0.10 + Math.random() * 0.24,
           w: Math.random() * Math.PI * 2
         });
       }
@@ -140,7 +140,7 @@
           if (d < 12000) {
             ctx.beginPath();
             ctx.moveTo(ps[k].x, ps[k].y); ctx.lineTo(ps[m].x, ps[m].y);
-            ctx.strokeStyle = 'rgba(108,172,246,' + (0.055 * (1 - d / 12000)) + ')';
+            ctx.strokeStyle = 'rgba(29,79,134,' + (0.075 * (1 - d / 12000)) + ')';
             ctx.lineWidth = 1; ctx.stroke();
           }
         }
@@ -168,11 +168,11 @@
         var pr = scan.t / 88;
         ctx.beginPath();
         ctx.arc(p.x, p.y, 6 + pr * 30, 0, 6.2832);
-        ctx.strokeStyle = 'rgba(152,220,88,' + (0.55 * (1 - pr)) + ')';
+        ctx.strokeStyle = 'rgba(79,130,38,' + (0.6 * (1 - pr)) + ')';
         ctx.lineWidth = 1.3; ctx.stroke();
         ctx.beginPath();
         ctx.arc(p.x, p.y, 2.4, 0, 6.2832);
-        ctx.fillStyle = 'rgba(152,220,88,0.9)'; ctx.fill();
+        ctx.fillStyle = 'rgba(79,130,38,0.9)'; ctx.fill();
       }
       requestAnimationFrame(tick);
     }
