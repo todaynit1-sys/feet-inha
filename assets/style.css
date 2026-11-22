@@ -1201,10 +1201,99 @@ footer a{color:var(--navy-d);font-weight:600;display:inline-block;padding:11px 0
 @media (prefers-reduced-motion:reduce){.pm-scene,.pm-cap,.pm-tabs [role="tab"]{transition:none}}
 
 /* ============================================================
-   성능 — 첫 화면 아래 구간은 화면에 들어올 때 렌더(content-visibility)
-   앵커·캐러셀 점 계산은 site.js 에서 확인. 모션 무대·논문 플레이어 구간은 제외.
+   연구 흐름도 (assets/flow-motion.js) — research.html #flow
+   SVG 안 흐름도는 스크립트가 그리고, 여기서는 틀·단계 표시줄·자막·조작부만
    ============================================================ */
-main>section:nth-of-type(n+3):not(.flag):not(.pm),footer{
+.flow{padding-bottom:clamp(56px,8vw,104px)}
+.flow .sec-head{margin-bottom:clamp(18px,3.6vw,36px)}
+.fs-frame{
+  position:relative;border-radius:22px;overflow:hidden;background:linear-gradient(180deg,#0C1420,#0F2337);
+  border:1px solid #1C2B3E;box-shadow:0 30px 60px -32px rgba(12,20,32,.65);
+}
+.fs-screen{
+  position:relative;aspect-ratio:16/9;touch-action:pan-y pinch-zoom;-webkit-user-select:none;user-select:none;cursor:pointer;
+}
+.fs-screen>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.fs-screen:focus-visible{outline:3px solid #A8D65C;outline-offset:-3px;border-radius:22px}
+.fs-screen::after{
+  content:"";position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;
+  background:rgba(11,26,43,.62) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5.5v13l11-6.5z' fill='%23fff'/%3E%3C/svg%3E") 55% 50%/28px no-repeat;
+  border:1px solid rgba(220,231,242,.35);opacity:0;transform:scale(.8);transition:opacity .2s,transform .2s var(--ease);pointer-events:none;
+}
+.fs-held .fs-screen::after{opacity:1;transform:none}
+.fs-route{
+  position:absolute;left:14px;top:15px;z-index:2;pointer-events:none;padding:4px 8px;border-radius:8px;
+  background:rgba(12,20,32,.84);font-size:.8rem;font-weight:600;color:#8FA3B8;letter-spacing:-.01em;line-height:1.2;
+}
+.fs-top{position:absolute;top:0;right:0;z-index:3;padding:9px 12px 0 0;pointer-events:none}
+.fs-steps{
+  list-style:none;display:flex;align-items:center;pointer-events:auto;padding:0 6px;border-radius:14px;
+  background:rgba(12,20,32,.84);border:1px solid #1C2B3E;
+}
+.fs-steps li{display:flex;align-items:center}
+.fs-steps li+li::before{content:"·";color:#4A5D75;font-weight:700;padding:0 1px}
+.fs-step{
+  position:relative;display:inline-flex;align-items:baseline;gap:5px;min-height:40px;padding:9px 9px 12px;
+  border:0;background:transparent;border-radius:10px;cursor:pointer;
+  font-family:var(--body);font-size:.85rem;font-weight:700;color:#8FA3B8;letter-spacing:-.01em;white-space:nowrap;
+  transition:color .18s;
+}
+.fs-step .n{font-family:var(--disp);font-size:.72rem;letter-spacing:.06em;color:#5C6F86;transition:color .18s}
+.fs-step .bar{position:absolute;left:9px;right:9px;bottom:6px;height:2px;border-radius:2px;background:#22324A;overflow:hidden}
+.fs-step .bar i{display:block;height:100%;border-radius:2px;background:#A8D65C;transform:scaleX(0);transform-origin:left}
+.fs-step[aria-current="step"]{color:#E6EEF7}
+.fs-step[aria-current="step"] .n{color:#A8D65C}
+.fs-step:focus-visible{outline:2px solid #A8D65C;outline-offset:-2px;border-radius:10px}
+@media (hover:hover){.fs-step:hover{color:#E6EEF7}}
+.fs-cap{display:grid;grid-template-columns:auto 1fr;gap:6px 24px;align-items:baseline;margin-top:20px;min-height:3.6em}
+.fs-title{font-weight:800;color:var(--deep);font-size:1.12rem;white-space:nowrap;display:flex;gap:10px;align-items:baseline;letter-spacing:-.02em}
+.fs-title b{font-family:var(--disp);color:var(--green-t);font-size:.84rem;letter-spacing:.12em}
+.fs-sub{color:var(--ink);font-size:clamp(1rem,.95rem + .3vw,1.12rem);line-height:1.62;max-width:46em}
+.fs-title,.fs-sub{transition:opacity .2s,transform .2s}
+.fs-cap.swap .fs-title,.fs-cap.swap .fs-sub{opacity:0;transform:translateY(6px)}
+.fs-ctrl{display:flex;align-items:center;gap:10px;margin-top:16px}
+.fs-all{
+  display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 20px 0 16px;border-radius:999px;
+  border:1px solid var(--line-2);background:#fff;color:var(--deep);box-shadow:var(--sh);cursor:pointer;
+  font-family:var(--body);font-size:.92rem;font-weight:700;
+  transition:border-color .18s,color .18s,background .18s,transform .14s var(--ease);
+}
+.fs-all svg{width:18px;height:18px}
+.fs-all[aria-pressed="true"]{border-color:var(--green);color:var(--green-t);background:rgba(107,160,58,.06)}
+@media (hover:hover){.fs-all:hover{border-color:var(--navy);color:var(--navy-d)}}
+.fs-all:active{transform:scale(.97)}
+.fs-links{margin-top:24px}
+.fs-fallback{list-style:none;display:grid;gap:12px;padding:0;color:var(--sub)}
+.fs-fallback b{color:var(--deep);margin-right:6px}
+.fs-fallback[hidden],.fs-on .fs-fallback{display:none}
+@media (max-width:767px){
+  .flow .sec-head{margin-bottom:16px}
+  /* 화면 끝까지(full-bleed). 단계 표시줄은 무대 바로 위 띠로 */
+  .fs-frame{margin-inline:calc(var(--gut) * -1);border-radius:0;border-left:0;border-right:0;box-shadow:none}
+  .fs-screen{aspect-ratio:4/5}
+  .fs-screen:focus-visible{border-radius:0}
+  .fs-top{position:static;padding:2px 4px 0;background:#0C1420;border-bottom:1px solid #172538}
+  .fs-steps{justify-content:center;padding:0;border:0;border-radius:0;background:none}
+  .fs-steps li+li::before{padding:0}
+  .fs-step{min-height:44px;padding:11px 6px 13px;font-size:.8rem;gap:4px}
+  .fs-step .n{font-size:.66rem;letter-spacing:.03em}
+  .fs-step .bar{left:6px;right:6px;bottom:6px}
+  .fs-route{left:8px;top:5px;font-size:.72rem;padding:3px 6px}
+  .fs-cap{grid-template-columns:1fr;gap:4px;min-height:6.4em;margin-top:14px}
+  .fs-ctrl{gap:6px;margin-top:12px}
+  .fs-all{padding:0 16px 0 13px;font-size:.88rem}
+  .fs-links{margin-top:18px}
+  .fs-links .btn{flex:1 1 0;padding-inline:16px}
+}
+@media (prefers-reduced-motion:reduce){.fs-title,.fs-sub,.fs-step,.fs-step .n{transition:none}.fs-all:active{transform:none}}
+
+/* ============================================================
+   성능 — 첫 화면 아래 구간은 화면에 들어올 때 렌더(content-visibility)
+   앵커·캐러셀 점 계산은 site.js 에서 확인. 모션 무대·논문 플레이어·흐름도 구간은 제외.
+   research.html 은 흐름도(.flow)가 두 번째 구간으로 들어오면서 #atmosphere 가 세 번째가 됐으므로,
+   이전과 같게 흐름도 바로 다음 구간도 제외한다.
+   ============================================================ */
+main>section:nth-of-type(n+3):not(.flag):not(.pm):not(.flow):not(.flow + section),footer{
   content-visibility:auto;contain-intrinsic-size:auto 900px;
 }
 footer{contain-intrinsic-size:auto 420px}

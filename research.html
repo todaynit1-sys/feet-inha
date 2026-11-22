@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="assets/style.css?v=13">
+<link rel="stylesheet" href="assets/style.css?v=14">
 </head>
 <body>
 
@@ -54,6 +54,30 @@
       <h1 id="ph-h">공기 속 입자를 <span class="grad-txt">추적합니다</span></h1>
       <p class="lead">연구는 서로 독립된 두 갈래로 굴러갑니다. 대기 중 나노–마이크로 입자를 추적하는 <b>Atmosphere</b>,
       입자를 합성해 새로운 물질을 만드는 <b>Material</b>. 두 갈래를 잇는 공통 키워드는 <b>입자</b>입니다.</p>
+    </div>
+  </section>
+
+  <!-- 연구 흐름도 (assets/flow-motion.js) — JS 가 꺼져 있으면 아래 순서 목록만 보인다 -->
+  <section id="flow" class="flow" aria-labelledby="flow-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">Research flow</p>
+        <h2 id="flow-h" class="h-lg">현장 측정에서 배출원 추적까지</h2>
+        <p>연구가 진행되는 과정을 따라가 봅니다.</p>
+      </div>
+      <div class="fstage" data-flow>
+        <ol class="fs-fallback">
+          <li><b>01 현장</b> 산업단지, 사업장 굴뚝, 도시 대기. 대기오염물질이 배출되고 이동하는 현장에서 연구가 시작됩니다.</li>
+          <li><b>02 측정</b> 측정 차량, 드론, 고정 측정 장비로 입자상·가스상 물질을 측정하고 시료를 채취합니다.</li>
+          <li><b>03 분석</b> 채취한 시료와 측정 자료의 성분과 물리·화학적 특성을 분석합니다.</li>
+          <li><b>04 추적</b> 측정 자료와 기상 자료를 통합하고 공간 통계로 고농도 지역을 선별해 배출원을 추적합니다.</li>
+          <li><b>05 활용</b> 결과는 논문으로 발표하고, 관리기관이 활용할 수 있는 측정 플랫폼 기술로 개발합니다.</li>
+        </ol>
+      </div>
+      <div class="btns fs-links">
+        <a class="btn btn-g" href="publications.html#paper-voc">논문 모션 보기</a>
+        <a class="btn btn-g" href="platform.html">대표 과제 보기</a>
+      </div>
     </div>
   </section>
 
@@ -232,6 +256,9 @@
   <a href="people.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8.5" r="3.3"/><path d="M3.2 20a5.8 5.8 0 0 1 11.6 0"/><path d="M15.5 5.4a3.2 3.2 0 0 1 0 6.2M17.2 14.6A5.8 5.8 0 0 1 20.8 20"/></svg><span>사람들</span></a>
 </nav>
 
-<script src="assets/site.js?v=13" defer></script>
+<script src="assets/site.js?v=14" defer></script>
+<script src="assets/motion-audio.js?v=14" defer></script>
+<script src="assets/motion.js?v=14" defer></script>
+<script src="assets/flow-motion.js?v=14" defer></script>
 </body>
 </html>

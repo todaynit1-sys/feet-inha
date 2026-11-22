@@ -1,5 +1,5 @@
 /* FEET Lab — 모션 소리 v1 (배경음 + 효과음, 모두 Web Audio 로 합성. 음원 파일·음성 없음)
-   세 가지 무대(과제 무대 .mstage, 논문 플레이어, 홈 첫 화면 모션)가 같이 쓴다. motion.js 보다 먼저 불러올 것.
+   네 가지 무대(과제 무대 .mstage, 논문 플레이어, 홈 첫 화면 모션, 연구 흐름도 .fstage)가 같이 쓴다. motion.js 보다 먼저 불러올 것.
    - 기본은 꺼짐. 각 조작부의 스피커 버튼으로 켜고 끈다. 선택은 localStorage('feet-sound') 에 기억.
    - AudioContext 는 사용자가 누른(클릭·키·터치) 뒤에만 만들거나 resume 한다.
    - 한 번에 한 플레이어만 배경음을 낸다(가장 최근에 재생을 시작한 무대).
@@ -28,7 +28,9 @@
     /* 미세플라스틱: A, 밝은 사인·삼각 */
     amp: { root: 55, a: [12, 19, 26, 31], b: [17, 24, 26, 33], wave: ['triangle', 'sine'], cut: [1100, 2400], q: 0.5, pulse: 1.8, air: 0.7, lvl: 1.1 },
     /* 첫 화면: F, 부드러운 사인 + 삼각, 가장 가볍게 */
-    hero: { root: 87.31, a: [0, 7, 14, 19], b: [5, 12, 19, 26], wave: ['sine', 'triangle'], cut: [900, 2200], q: 0.5, pulse: 2.6, air: 0.45, lvl: 1.1 }
+    hero: { root: 87.31, a: [0, 7, 14, 19], b: [5, 12, 19, 26], wave: ['sine', 'triangle'], cut: [900, 2200], q: 0.5, pulse: 2.6, air: 0.45, lvl: 1.1 },
+    /* 연구 흐름도: E♭, 사인 + 삼각, 느린 맥박(흐름도 카메라 투어용) */
+    flow: { root: 77.78, a: [0, 7, 14, 19], b: [-2, 5, 12, 14], wave: ['sine', 'triangle'], cut: [750, 1800], q: 0.55, pulse: 2.9, air: 0.5, lvl: 1.15 }
   };
   var CHORD_SEC = 9;      /* 두 화음을 오가는 주기의 절반 */
   var BG_LEVEL = 0.16;    /* 배경음 버스 */
@@ -241,6 +243,24 @@
       s.connect(lf); lf.connect(ng); ng.connect(G.fx);
       var sd = ctx.createGain(); sd.gain.value = 0.35; g.connect(sd); sd.connect(G.verb);
       o.start(t); o.stop(t + 2.2); s.start(t); s.stop(t + 0.8);
+    },
+    /* 흐름도: 카메라가 노드에 내려앉을 때 짧고 낮은 '둥'(boom 보다 가볍게, 잡음 없음) */
+    land: function (G, t) {
+      var ctx = G.ctx, g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.3, t + 0.015);
+      g.gain.setTargetAtTime(0, t + 0.04, 0.2);
+      g.connect(G.fx);
+      var sd = ctx.createGain(); sd.gain.value = 0.3; g.connect(sd); sd.connect(G.verb);
+      var fr = [[96, 54, 1], [192, 110, 0.22]];
+      for (var i = 0; i < fr.length; i++) {
+        var o = ctx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(fr[i][0], t);
+        o.frequency.exponentialRampToValueAtTime(fr[i][1], t + 0.5);
+        var og = ctx.createGain(); og.gain.value = fr[i][2];
+        o.connect(og); og.connect(g);
+        o.start(t); o.stop(t + 1.4);
+      }
     }
   };
   function tick(G, t, amp) {
@@ -454,7 +474,10 @@
     var b = new Bed(g, name);
     b.gain.gain.setValueAtTime(0, 0); b.gain.gain.linearRampToValueAtTime(b.th.lvl, 0.8);
     b.start(0); b.schedule(sec + 1);
-    if (withSfx) {
+    if (withSfx && withSfx.length) {
+      /* 큐 목록 [[시각, 이름, 인자], …] 을 그대로 렌더(흐름도 검증용) */
+      for (var q = 0; q < withSfx.length; q++) if (SFX[withSfx[q][1]] && withSfx[q][0] < sec) SFX[withSfx[q][1]](g, withSfx[q][0], withSfx[q][2]);
+    } else if (withSfx) {
       SFX.whoosh(g, 1.0); SFX.count(g, 2.0, 1.4); SFX.ping(g, 4.2, 0); SFX.ping(g, 4.5, 5);
       SFX.boom(g, 6.0); SFX.whoosh(g, 7.4); SFX.ping(g, 8.6, 7);
     }
