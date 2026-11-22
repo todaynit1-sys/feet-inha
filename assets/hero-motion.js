@@ -1,5 +1,5 @@
 /* FEET Lab — 홈 첫 화면 연구실 소개 모션 v1 (약 14초 반복)
-   4막: 잽니다 → 추적합니다 → 만듭니다 → 로고. 입자 48개가 끊기지 않고 다음 형태로 옮겨 간다.
+   4막: 측정 → 추적 → 합성 → 로고. 입자 48개가 끊기지 않고 다음 형태로 옮겨 간다.
    motion.js(FEETMotionKit)·motion-audio.js 다음에 불러올 것.
    마크업: <div class="hero-motion" data-hero-motion><div class="hm-screen">(대체 그림)</div></div>
    디버그: ?hero=12.8 → 그 시각에서 멈춘 화면. window.__hero.seek(초) */
@@ -98,7 +98,7 @@
   if (reduced) root.classList.add('hm-still');
   var svg = el('svg', { viewBox: VB_DESK, preserveAspectRatio: 'xMidYMid meet', 'aria-hidden': 'true', focusable: 'false' });
   screen.setAttribute('role', 'img');
-  screen.setAttribute('aria-label', '연구실 소개 모션: 공기 속 입자를 잽니다, 추적합니다, 소재를 만듭니다. 마지막에 FEET 로고.');
+  screen.setAttribute('aria-label', '연구실 소개 모션: 대기오염물질을 측정합니다, 대기오염원을 추적합니다, 새로운 소재를 합성합니다. 마지막에 FEET 로고.');
   screen.appendChild(svg);
   var defs = el('defs', {}, svg);
   var gl = el('filter', { id: 'hmglow', x: '-50%', y: '-50%', width: '200%', height: '200%' }, defs);
@@ -172,9 +172,9 @@
   var vclip = el('clipPath', { id: 'hmvclip' }, defs);
   el('rect', { x: 0, y: 40, width: 800, height: 100 }, vclip);
   var vg = el('g', { 'clip-path': 'url(#hmvclip)' }, svg);
-  var VERBS = [['잽니다', 0.3, 3.25], ['추적합니다', 3.7, 6.75], ['만듭니다', 7.2, 10.25]], verbs = [];
+  var VERBS = [['대기오염물질을 측정합니다', 0.3, 3.25], ['대기오염원을 추적합니다', 3.7, 6.75], ['새로운 소재를 합성합니다', 7.2, 10.25]], verbs = [];
   for (k = 0; k < VERBS.length; k++) {
-    var vt = el('text', { x: 40, y: 122, 'font-size': 78, 'font-family': BODY, 'font-weight': 800, fill: NAVY, 'letter-spacing': '-0.03em' }, vg);
+    var vt = el('text', { x: 40, y: 112, 'font-size': 52, 'font-family': BODY, 'font-weight': 800, fill: NAVY, 'letter-spacing': '-0.03em' }, vg);
     vt.textContent = VERBS[k][0];
     verbs.push(vt);
   }

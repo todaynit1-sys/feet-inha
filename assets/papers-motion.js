@@ -614,7 +614,7 @@
       items.push({ g: ig, bar: bar, t: tt, at: 0.9 + k * 1.15 });
     }
     var tag = el('g', {}, hud);
-    txt(tag, 64, 128, '입자 하나씩 확인', 38, { fill: P.mute, w: 600 });
+    txt(tag, 64, 128, '단일 입자 분석', 38, { fill: P.mute, w: 600 });
     /* 스펙트럼 */
     var spec = el('g', {}, hud);
     el('line', { x1: 120, y1: 820, x2: 1080, y2: 820, stroke: P.dim, 'stroke-width': 2 }, spec);
@@ -928,7 +928,7 @@
     return el('rect', { x: 0, y: 0, width: r[0], height: r[1], fill: 'url(#' + id + ')' }, hud);
   }
 
-  /* 1. 넓고 촘촘한 산업단지 */
+  /* 1. 시설이 밀집한 산업단지 */
   function vcPark(L, hud, ctx) {
     vBase(L);
     var smoke = vSmoke(L.front, ctx, 18, 3);
@@ -952,7 +952,7 @@
     };
   }
 
-  /* 2. 달리며 넓게 잰다 */
+  /* 2. 차량 이동 측정 */
   function vcDrive(L, hud, ctx) {
     vBase(L);
     var smoke = vSmoke(L.front, ctx, 18, 3);
@@ -1012,7 +1012,7 @@
     };
   }
 
-  /* 3. 통계로 고농도 지역을 찾는다 */
+  /* 3. 공간 통계로 고농도 지역 선별 */
   function vcHot(L, hud, ctx) {
     vBase(L);
     var k, q;
@@ -1080,7 +1080,7 @@
     };
   }
 
-  /* 4. 드론으로 위에서 확인한다 (옆에서 본 모습) */
+  /* 4. 드론으로 상공에서 확인 (옆에서 본 모습) */
   var VD = { gy: 740, px: 20, tx: 650, ty: 250, roofY: 520 };
   function vcDrone(L, hud, ctx) {
     var k, GY = VD.gy;
@@ -1276,13 +1276,13 @@
       note: '화면의 지도·막대는 이해를 돕기 위한 개념도이며, 실제 측정값은 논문 원문에 있습니다.',
       doi: 'https://doi.org/10.1016/j.atmosenv.2026.121807',
       scenes: [
-        { title: '넓고 촘촘한 산업단지', cap: '안산의 B 국가산업단지. 15.4 km²에 중소 제조시설 약 9,000곳이 모여 있어,\n휘발성유기화합물(VOC)이 어디서 나오는지 가려내기 어렵습니다.', dur: 5.0, inT: 'fade', build: vcPark,
+        { title: '시설이 밀집한 산업단지', cap: '안산의 B 국가산업단지. 15.4 km²에 중소 제조시설 약 9,000곳이 모여 있어,\n휘발성유기화합물(VOC)의 배출원을 특정하기 어렵습니다.', dur: 5.0, inT: 'fade', build: vcPark,
           cam: push(600, 450, 2.3, 1.0), sfx: [[-0.35, 'whoosh'], [1.1, 'count', 1.4], [2.65, 'ping', 5]] },
-        { title: '달리며 넓게 잰다', cap: '선택이온유동관 질량분석기(SIFT-MS)를 실은 측정 차량이\n약 80 km 경로를 달리며 4초마다 공기를 분석했습니다.', dur: 5.6, inT: 'fade', build: vcDrive,
+        { title: '차량 이동 측정', cap: '선택이온유동관 질량분석기(SIFT-MS)를 실은 측정 차량이\n약 80 km 경로를 달리며 4초마다 공기를 분석했습니다.', dur: 5.6, inT: 'fade', build: vcDrive,
           cam: push(600, 450, 1.0, 1.03), sfx: [[-0.35, 'whoosh'], [0.55, 'count', 4.25], [1.05, 'ping', 0]] },
-        { title: '통계로 고농도 지역을 찾는다', cap: '공간 통계(Getis-Ord Gi*)로 농도가 높은 구간이 뭉친 곳을 찾아,\n우선 조사 지역 세 곳을 정했습니다.', dur: 5.4, inT: 'fade', build: vcHot,
+        { title: '공간 통계로 고농도 지역 선별', cap: '공간 통계(Getis-Ord Gi*)로 고농도 구간이 밀집한 곳을 찾아,\n우선 조사 지역 세 곳을 정했습니다.', dur: 5.4, inT: 'fade', build: vcHot,
           cam: zoomOut(push(600, 450, 1.0, 1.03), vHA2.cx, vHA2.cy, 2.4), sfx: [[-0.35, 'whoosh'], [2.15, 'ping', 0], [2.5, 'ping', 3], [2.85, 'ping', 7], [3.35, 'ping', 12]] },
-        { title: '드론으로 위에서 확인한다', cap: '드론이 세 지역 상공 20~30 m에서 총휘발성유기화합물(TVOC)이 높은 지점을 찾아\n공기 시료를 채취하고, 같은 SIFT-MS로 분석했습니다.', dur: 5.6, inT: 'match', build: vcDrone,
+        { title: '드론으로 상공에서 확인', cap: '드론이 세 지역 상공 20~30 m에서 총휘발성유기화합물(TVOC)이 높은 지점을 찾아\n공기 시료를 채취하고, 같은 SIFT‑MS로 분석했습니다.', dur: 5.6, inT: 'match', build: vcDrone,
           cam: zoomIn(push(620, 450, 1.0, 1.04), 655, VD.roofY, 2.2, 1.5), sfx: [[0, 'boom'], [1.05, 'ping', 0], [3.0, 'ping', 5], [3.95, 'ping', 7]] },
         { title: '서로 다른 화학 조성', cap: '지상과 상공에서 같은 화학 조성이 확인됐고,\n인접한 세 지점은 서로 다른 조성으로 구분됐습니다.', dur: 5.2, inT: 'wipe', build: vcProfile,
           cam: push(600, 450, 1.0, 1.03), sfx: [[-0.5, 'whoosh'], [2.35, 'ping', 0], [2.65, 'ping', 3], [2.95, 'ping', 7]] }
@@ -1296,9 +1296,9 @@
       authors: 'Xiyao Chen, Joseph Ching, Feng Wu, Hitoshi Matsui, Mark Z. Jacobson, Fan Zhang, Yuanyuan Wang, Zexuan Zhang, Dantong Liu, Shupeng Zhu, Yinon Rudich, Zongbo Shi, <em>Hanjin Yoo</em>, <em>Ki-Joon Jeon</em>, Weijun Li',
       doi: 'https://doi.org/10.1038/s41467-025-65079-2',
       scenes: [
-        { title: '모델의 가정', cap: '기후 모델은 블랙카본 입자 하나에\n핵이 하나라고 가정해 왔습니다.', dur: 5.0, inT: 'fade', build: bcModel,
+        { title: '모델의 가정', cap: '기후 모델은 블랙카본 입자 하나에\n핵이 하나 있다고 가정해 왔습니다.', dur: 5.0, inT: 'fade', build: bcModel,
           cam: zoomOut(push(BC1.x, BC1.y, 1.0, 1.05), BC1.x, BC1.y, MATCH_R / BC1.R), sfx: [[-0.35, 'whoosh'], [1.85, 'ping', 0]] },
-        { title: '21%', cap: '산불 연기를 들여다보니,\n블랙카본 입자의 21%에는 핵이 여러 개 있었습니다.', dur: 5.2, inT: 'match', build: bcShare,
+        { title: '21%', cap: '산불 연기를 관측한 결과,\n블랙카본 입자의 21%에는 핵이 여러 개 있었습니다.', dur: 5.2, inT: 'match', build: bcShare,
           cam: zoomIn(push(860, 450, 1.0, 1.04), bcFocus.x, bcFocus.y, MATCH_R / BC2.r, 1.5), sfx: [[0, 'boom'], [1.7, 'count', 1.8], [2.15, 'ping', 5]] },
         { title: '1.81배', cap: '핵이 여러 개인 큰 입자는 핵 하나로 계산했을 때보다\n빛을 1.81배 흡수합니다.', dur: 5.6, inT: 'wipe', build: bcRatio,
           cam: zoomOut(push(600, 420, 1.0, 1.04), BC3.rx, BC3.y, 280 / BC3.R), sfx: [[-0.5, 'whoosh'], [2.2, 'count', 1.2], [2.85, 'ping', 5]] },
@@ -1310,17 +1310,17 @@
       key: 'amp', name: '미세플라스틱', accent: P.teal, oa: true,
       journal: 'Environment International', year: '2026', cite: 'Environment International 212, 110288 (2026)',
       title: 'Inhalable airborne microplastics in urban air: single-particle evidence of diurnal variability and physicochemical characteristics',
-      sum: '도시 공기 속 숨으로 들어오는 미세플라스틱을 입자 하나씩 분석한 연구',
+      sum: '도시 대기 중 흡입성 미세플라스틱을 단일 입자 단위로 분석한 연구',
       authors: '<em>Hanjin Yoo</em>, Haeju Lee, <em>Jonghyeon Park</em>, <em>Yen Thi-Hoang Le</em>, <em>Cheonwoong Kang</em>, Young-Chul Song, Chul-Un Ro, Liang Xu, Weijun Li, <em>Ki-Joon Jeon</em>',
       doi: 'https://doi.org/10.1016/j.envint.2026.110288',
       scenes: [
-        { title: '숨 쉬는 공기 속', cap: '도시 공기 속 미세먼지(PM10)에는 플라스틱 조각도 섞여 있습니다.\n얼마나, 어떤 모습일까요.', dur: 5.0, inT: 'fade', build: amAir,
+        { title: '도시 대기 중 미세플라스틱', cap: '도시 대기 중 미세먼지(PM10)에는 미세플라스틱도 포함되어 있습니다.\n그 농도와 특성을 조사했습니다.', dur: 5.0, inT: 'fade', build: amAir,
           cam: zoomOut(push(600, 420, 1.0, 1.05), AM1.x, AM1.y, MATCH_R / AM1.s), sfx: [[-0.35, 'whoosh'], [0.85, 'ping', 0], [2.45, 'ping', 5]] },
-        { title: '입자 하나씩', cap: '형광 현미경, 라만 분광, 전자현미경을 묶어\n입자 하나하나를 확인했습니다.', dur: 5.6, inT: 'match', build: amLens,
+        { title: '단일 입자 분석', cap: '형광 현미경, 라만 분광, 전자현미경을 결합해\n입자를 하나씩 분석했습니다.', dur: 5.6, inT: 'match', build: amLens,
           cam: zoomIn(push(AM2.x, AM2.y, 1.0, 1.04), AM2.x, AM2.y, MATCH_R / AM2.s, 1.3), sfx: [[0, 'boom'], [0.95, 'ping', 0], [2.1, 'ping', 3], [3.25, 'ping', 7]] },
-        { title: '밤에 60% 더', cap: '공기 1㎥에 평균 약 1,300개.\n밤에는 낮보다 약 60% 더 많았습니다.', dur: 5.6, inT: 'wipe', build: amNight,
+        { title: '야간 농도 증가', cap: '공기 1㎥에 평균 약 1,300개.\n야간 농도는 주간보다 약 60% 높았습니다.', dur: 5.6, inT: 'wipe', build: amNight,
           cam: push(700, 560, 1.0, 1.04), sfx: [[-0.5, 'whoosh'], [0.7, 'count', 1.2], [2.9, 'count', 1.0]] },
-        { title: '폐 깊숙이', cap: '95%가 10㎛보다 작고, 약 40%는 2.5㎛보다 작았습니다.\n대기 중 농도는 주로 기상 조건이 좌우했습니다.', dur: 5.4, inT: 'wipe', build: amSize,
+        { title: '입자 크기 분포', cap: '95%가 10㎛보다 작고, 약 40%는 2.5㎛보다 작았습니다.\n대기 중 농도는 주로 기상 조건이 좌우했습니다.', dur: 5.4, inT: 'wipe', build: amSize,
           cam: push(560, 560, 1.0, 1.04), sfx: [[-0.5, 'whoosh'], [2.2, 'count', 0.9], [2.9, 'count', 0.9]] }
       ]
     }
