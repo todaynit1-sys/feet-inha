@@ -770,6 +770,34 @@
 
   var uid = 0;
 
+  /* ---------- 터치 조작: 탭 = 재생/일시정지, 좌우 스와이프 = 이전/다음 장면 ----------
+     CSS 의 touch-action: pan-y 덕분에 세로 스크롤은 브라우저가 그대로 처리하고(pointercancel),
+     가로 이동이 뚜렷할 때만 장면을 넘긴다. */
+  function gestures(target, onTap, onSwipe) {
+    var sx = 0, sy = 0, st = 0, pid = null;
+    if (!window.PointerEvent) return;
+    target.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      pid = e.pointerId; sx = e.clientX; sy = e.clientY; st = Date.now();
+    });
+    target.addEventListener('pointerup', function (e) {
+      if (pid === null || e.pointerId !== pid) return;
+      pid = null;
+      var dx = e.clientX - sx, dy = e.clientY - sy, ax = Math.abs(dx), ay = Math.abs(dy);
+      if (ax >= 40 && ax > ay * 1.6) onSwipe(dx < 0 ? 1 : -1);
+      else if (ax < 12 && ay < 12 && Date.now() - st < 600) onTap();
+    });
+    target.addEventListener('pointercancel', function () { pid = null; });
+  }
+  /* 장면 칩 줄이 가로로 넘칠 때, 지금 장면 칩을 가운데로(페이지는 움직이지 않음) */
+  function chipIntoView(ol, b) {
+    if (!ol || !b || ol.scrollWidth <= ol.clientWidth + 1) return;
+    var or = ol.getBoundingClientRect(), br = b.getBoundingClientRect();
+    var left = ol.scrollLeft + (br.left - or.left) - (or.width - br.width) / 2;
+    if (ol.scrollTo) ol.scrollTo({ left: left, behavior: reduced ? 'auto' : 'smooth' });
+    else ol.scrollLeft = left;
+  }
+
   /* ---------- 무대 ---------- */
   function Stage(root) {
     var self = this;
@@ -796,7 +824,7 @@
     screen.setAttribute('aria-roledescription', '모션 그래픽');
     screen.setAttribute('aria-label', reduced
       ? '대표 과제 소개 그림. 아래 장면 버튼이나 좌우 화살표 키로 장면을 넘겨 볼 수 있습니다.'
-      : '대표 과제 소개 모션 그래픽. 스페이스 키로 재생과 일시정지, 좌우 화살표 키로 장면 이동.');
+      : '대표 과제 소개 모션 그래픽. 스페이스 키나 탭으로 재생과 일시정지, 좌우 화살표 키나 옆으로 밀어 장면 이동.');
     var svg = el('svg', { viewBox: '0 0 1600 900', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMid meet' });
     screen.appendChild(svg);
 
@@ -861,6 +889,10 @@
     restart.addEventListener('click', function () {
       self.t = XF; self.userPaused = false; self.debug = false; self.render(); self.sync();
     });
+    this.chipsOl = chipsOl;
+    gestures(screen,
+      function () { if (!reduced) play.click(); },
+      function (dir) { self.go((self.cur + (dir > 0 ? 1 : SCENES.length - 1)) % SCENES.length); });
     root.addEventListener('keydown', function (e) {
       var k = e.key;
       if (k === 'ArrowRight' || k === 'ArrowLeft') {
@@ -917,6 +949,7 @@
     this.playBtn.innerHTML = showPause ? ICON_PAUSE : ICON_PLAY;
     this.playBtn.setAttribute('aria-label', showPause ? '일시정지' : '재생');
     this.root.className = this.root.className.replace(' ms-paused', '') + (showPause ? '' : ' ms-paused');
+    this.root.classList.toggle('ms-held', this.userPaused && !this.debug);
   };
 
   Stage.prototype.tick = function (ts) {
@@ -962,6 +995,7 @@
       if (k === i) this.chips[k].setAttribute('aria-current', 'step');
       else this.chips[k].removeAttribute('aria-current');
     }
+    chipIntoView(this.chipsOl, this.chips[i]);
     function put() {
       self.capNo.textContent = '0' + (i + 1);
       self.capTitle.textContent = SCENES[i].title;
@@ -980,6 +1014,7 @@
     clamp: clamp, seg: seg, eo: eo, eio: eio, back: back, rnd: rnd, f2: f2, lerp: lerp, mod: mod,
     el: el, text: text, A: A, O: O, T: T, vis: vis,
     samplePoly: samplePoly, polyAt: polyAt, bez: bez, bezD: bezD,
+    gestures: gestures, chipIntoView: chipIntoView,
     ICON_PAUSE: ICON_PAUSE, ICON_PLAY: ICON_PLAY, ICON_RESTART: ICON_RESTART
   };
 

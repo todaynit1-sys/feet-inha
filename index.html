@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>FEET Lab — 인하대학교 전기준 교수 연구실</title>
 <meta name="description" content="인하대학교 FEET Lab — 대기 미세입자를 측정하고 추적하는 연구실. 블랙카본 배출원 추적, 모바일 기반 대기측정, 암모니아·온실가스 고해상도 측정.">
 <meta property="og:type" content="website">
@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preload" as="image" href="images/logo-mark.png">
-<link rel="stylesheet" href="assets/style.css?v=10">
+<link rel="stylesheet" href="assets/style.css?v=11">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"ResearchOrganization","name":"FEET Lab — Fine Energy & Environment Technology Laboratory","alternateName":"인하대학교 전기준 교수 연구실","url":"https://REPLACE-ME.github.io/feet-lab/","logo":"https://REPLACE-ME.github.io/feet-lab/images/logo-mark.png","parentOrganization":{"@type":"CollegeOrUniversity","name":"Inha University","url":"https://www.inha.ac.kr/"},"address":{"@type":"PostalAddress","streetAddress":"인하로 100","addressLocality":"인천광역시 미추홀구","addressCountry":"KR"},"email":"kjjeon@inha.ac.kr","employee":{"@type":"Person","name":"Ki-Joon Jeon","jobTitle":"Professor","email":"kjjeon@inha.ac.kr","affiliation":{"@type":"CollegeOrUniversity","name":"Inha University"}},"knowsAbout":["Black carbon","Airborne microplastics","Mobile air quality monitoring","Nanoparticle analysis","Electrocatalyst","2D materials"]}</script>
 </head>
 <body>
@@ -34,6 +34,7 @@
       <img src="images/logo-mark.png" alt="" width="34" height="31" decoding="async">
       <span><b>FEET LAB</b><i>Fine Energy &amp; Environment Technology</i></span>
     </a>
+    <a class="top-cta" href="join.html">함께하기</a>
     <button class="burger" aria-label="메뉴 열기" aria-expanded="false"><span></span></button>
     <nav class="gnb" aria-label="주 메뉴">
       <a href="index.html" aria-current="page">홈</a>
@@ -70,7 +71,7 @@
       </div>
     </div>
     <div class="wrap hero-btm">
-      <div class="hero-foot">
+      <div class="hero-foot" role="region" aria-label="연구 초점 세 가지" tabindex="0">
         <div><b>블랙카본</b>배출원 추적과 거동 규명</div>
         <div><b>모바일 기반 대기측정</b>이동형 플랫폼 실시간 관측</div>
         <div><b>암모니아·온실가스</b>고해상도 측정 기술 국산화</div>
@@ -100,6 +101,8 @@
         <a class="btn btn-p" href="platform.html">이 과제 자세히 보기
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
       </div>
+      <!-- 모바일에서는 히어로의 같은 안내를 여기서 보여 준다(첫 화면에 모션 무대가 보이도록) -->
+      <p class="sub-note sub-note-m"><a href="https://spprmc.inha.ac.kr/" target="_blank" rel="noopener">수도권미세먼지연구관리센터</a>를 운영하고 있습니다</p>
     </div>
   </section>
 
@@ -153,7 +156,7 @@
         <h2 id="proj-h" class="h-lg">지금 진행 중인 과제</h2>
         <p>들어오면 바로 이 과제들 안에서 배우고, 측정하고, 만들게 됩니다.</p>
       </div>
-      <div class="proj-grid">
+      <div class="proj-grid hs" role="region" aria-label="진행 중인 과제 목록, 옆으로 넘겨 보기" tabindex="0">
         <a class="proj proj-flag rv" href="platform.html">
           <span class="yrs"><span class="flag-tag">대표 과제</span><span class="yr">2026 – 2030</span></span>
           <h3>대기배출원의 효율적 통합관리를 위한 고정/이동형 측정 플랫폼 기술 개발</h3>
@@ -189,7 +192,7 @@
         <p class="eyebrow">Fresh off the press</p>
         <h2 id="pubs-h" class="h-lg">최근에 이런 논문을 냈습니다</h2>
       </div>
-      <div class="pub-strip">
+      <div class="pub-strip hs" role="region" aria-label="최근 논문 목록, 옆으로 넘겨 보기" tabindex="0">
         <div class="pub-mini has-motion rv">
           <a class="pm-main" href="https://doi.org/10.1038/s41467-025-65079-2" target="_blank" rel="noopener">
             <span class="y">2025 · NATURE COMM.</span>
@@ -231,7 +234,7 @@
         <p class="eyebrow">Lab life</p>
         <h2 id="life-h" class="h-lg">연구만 하는 건 아니고요</h2>
       </div>
-      <div class="life-grid">
+      <div class="life-grid hs" role="region" aria-label="연구실 일상, 옆으로 넘겨 보기" tabindex="0">
         <div class="life-card rv">
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#1D4E86" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 20V9l6-5 6 5v11"/><path d="M10 20v-5h4v5"/></svg></span>
           <h3>학회 시즌이면 다 같이 짐을 쌉니다</h3>
@@ -287,7 +290,15 @@
   </div>
 </footer>
 
-<script src="assets/site.js?v=10" defer></script>
-<script src="assets/motion.js?v=10" defer></script>
+<nav class="tabbar" aria-label="빠른 메뉴">
+  <a href="index.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 10.6 12 3.6l8.5 7V19a1.6 1.6 0 0 1-1.6 1.6H15v-6H9v6H5.1A1.6 1.6 0 0 1 3.5 19z"/></svg><span>홈</span></a>
+  <a href="research.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.5 3.5h5M10.5 3.5v5.6L5 18.3a1.6 1.6 0 0 0 1.4 2.4h11.2a1.6 1.6 0 0 0 1.4-2.4l-5.5-9.2V3.5"/><path d="M7.4 14.5h9.2"/></svg><span>연구</span></a>
+  <a href="platform.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="2"/><path d="M8.2 15.8a5.4 5.4 0 0 1 0-7.6M15.8 8.2a5.4 5.4 0 0 1 0 7.6M5.3 18.7a9.5 9.5 0 0 1 0-13.4M18.7 5.3a9.5 9.5 0 0 1 0 13.4"/></svg><span>플랫폼</span></a>
+  <a href="publications.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3.5H7.2a1.7 1.7 0 0 0-1.7 1.7v13.6a1.7 1.7 0 0 0 1.7 1.7h9.6a1.7 1.7 0 0 0 1.7-1.7V8z"/><path d="M14 3.5V8h4.5M9 12.5h6M9 16h6"/></svg><span>논문</span></a>
+  <a href="people.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8.5" r="3.3"/><path d="M3.2 20a5.8 5.8 0 0 1 11.6 0"/><path d="M15.5 5.4a3.2 3.2 0 0 1 0 6.2M17.2 14.6A5.8 5.8 0 0 1 20.8 20"/></svg><span>사람들</span></a>
+</nav>
+
+<script src="assets/site.js?v=11" defer></script>
+<script src="assets/motion.js?v=11" defer></script>
 </body>
 </html>

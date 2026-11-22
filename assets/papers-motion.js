@@ -992,6 +992,10 @@
         });
       })(i);
     }
+    /* 탭 = 재생/일시정지, 좌우 스와이프 = 이전/다음 장면 (motion.js 의 도우미) */
+    if (K.gestures) K.gestures(screen,
+      function () { if (!reduced) self.playBtn.click(); },
+      function (dir) { var n = PAPERS[self.pi].scenes.length; self.go((self.cur + (dir > 0 ? 1 : n - 1)) % n); });
     screen.addEventListener('keydown', function (e) {
       var k = e.key, n = PAPERS[self.pi].scenes.length;
       if (k === 'ArrowRight' || k === 'ArrowLeft') {
@@ -1065,7 +1069,7 @@
     doi.setAttribute('aria-label', '원문 보기: ' + pp.cite + ' (새 창)');
     this.screen.setAttribute('aria-label', pp.name + ' 논문 20초 모션. ' + (reduced
       ? '장면 버튼이나 좌우 화살표 키로 장면을 넘겨 볼 수 있습니다.'
-      : '스페이스 키로 재생과 일시정지, 좌우 화살표 키로 장면 이동.'));
+      : '스페이스 키나 탭으로 재생과 일시정지, 좌우 화살표 키나 옆으로 밀어 장면 이동.'));
     this.chipsOl.innerHTML = '';
     this.chips = []; this.bars = [];
     for (k = 0; k < pp.scenes.length; k++) {
@@ -1119,6 +1123,7 @@
     this.playBtn.innerHTML = showPause ? K.ICON_PAUSE : K.ICON_PLAY;
     this.playBtn.setAttribute('aria-label', showPause ? '일시정지' : '재생');
     this.root.className = this.root.className.replace(' pm-paused', '') + (showPause ? '' : ' pm-paused');
+    this.root.classList.toggle('pm-held', this.userPaused && !this.debug);
   };
 
   Player.prototype.tick = function (ts) {
@@ -1197,6 +1202,7 @@
       if (k === i) this.chips[k].setAttribute('aria-current', 'step');
       else this.chips[k].removeAttribute('aria-current');
     }
+    if (K.chipIntoView) K.chipIntoView(this.chipsOl, this.chips[i]);
     function put() {
       self.q('.pm-scene b').textContent = '0' + (i + 1);
       self.q('.pm-scene span').textContent = sd.title;
