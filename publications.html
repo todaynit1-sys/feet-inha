@@ -19,7 +19,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="assets/style.css?v=11">
+<link rel="stylesheet" href="assets/style.css?v=12">
 </head>
 <body>
 
@@ -62,19 +62,31 @@
     <div class="wrap">
       <div class="sec-head rv">
         <p class="eyebrow">Papers in motion</p>
-        <h2 id="pm-h" class="h-lg">논문을 20초로 봅니다</h2>
+        <h2 id="pm-h" class="h-lg">논문을 모션으로 봅니다</h2>
         <p>공개된 논문부터 하나씩 모션으로 옮기고 있습니다.</p>
       </div>
       <div class="pm-player" data-papers-motion>
         <div class="pm-tabs" role="tablist" aria-label="논문 선택">
-          <button type="button" role="tab" id="paper-bc" aria-selected="true" aria-controls="pm-panel">블랙카본</button>
+          <button type="button" role="tab" id="paper-voc" aria-selected="true" aria-controls="pm-panel">VOC 추적</button>
+          <button type="button" role="tab" id="paper-bc" aria-selected="false" aria-controls="pm-panel" tabindex="-1">블랙카본</button>
           <button type="button" role="tab" id="paper-amp" aria-selected="false" aria-controls="pm-panel" tabindex="-1">미세플라스틱</button>
         </div>
-        <div class="pm-grid" role="tabpanel" id="pm-panel" aria-labelledby="paper-bc">
+        <div class="pm-grid" role="tabpanel" id="pm-panel" aria-labelledby="paper-voc">
           <div class="pm-screen"></div>
           <div class="pm-info"></div>
         </div>
         <div class="pm-fallback">
+          <div>
+            <h3>VOC 추적 — Atmospheric Environment (2026)</h3>
+            <ol>
+              <li><b>넓고 촘촘한 산업단지</b> — 안산의 B 국가산업단지. 15.4 km²에 중소 제조시설 약 9,000곳이 모여 있어, 휘발성유기화합물(VOC)이 어디서 나오는지 가려내기 어렵습니다.</li>
+              <li><b>달리며 넓게 잰다</b> — 선택이온유동관 질량분석기(SIFT-MS)를 실은 측정 차량이 약 80 km 경로를 달리며 4초마다 공기를 분석했습니다.</li>
+              <li><b>통계로 고농도 지역을 찾는다</b> — 공간 통계(Getis-Ord Gi*)로 농도가 높은 구간이 뭉친 곳을 찾아, 우선 조사 지역 세 곳을 정했습니다.</li>
+              <li><b>드론으로 위에서 확인한다</b> — 드론이 세 지역 상공 20~30 m에서 총휘발성유기화합물(TVOC)이 높은 지점을 찾아 공기 시료를 채취하고, 같은 SIFT-MS로 분석했습니다.</li>
+              <li><b>서로 다른 화학 조성</b> — 지상과 상공에서 같은 화학 조성이 확인됐고, 인접한 세 지점은 서로 다른 조성으로 구분됐습니다.</li>
+            </ol>
+            <a class="doi" href="https://doi.org/10.1016/j.atmosenv.2026.121807" target="_blank" rel="noopener">원문 보기</a>
+          </div>
           <div>
             <h3>블랙카본 — Nature Communications (2025)</h3>
             <ol>
@@ -214,6 +226,7 @@
             <p class="au"><em>Cheonwoong Kang</em>, Hyunjun Shin, Hyunjeong Seo, <em>Hanjin Yoo</em>, <em>Ki-Joon Jeon</em></p>
             <div class="meta">
               <span class="chip">2026</span><span class="chip t-air">Atmosphere</span>
+              <a class="pm-link" href="#paper-voc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>모션으로 보기</a>
               <a class="doi" href="https://doi.org/10.1016/j.atmosenv.2026.121807" target="_blank" rel="noopener">doi.org/10.1016/j.atmosenv.2026.121807</a>
             </div>
           </div>
@@ -446,8 +459,9 @@
   <a href="people.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8.5" r="3.3"/><path d="M3.2 20a5.8 5.8 0 0 1 11.6 0"/><path d="M15.5 5.4a3.2 3.2 0 0 1 0 6.2M17.2 14.6A5.8 5.8 0 0 1 20.8 20"/></svg><span>사람들</span></a>
 </nav>
 
-<script src="assets/site.js?v=11" defer></script>
-<script src="assets/motion.js?v=11" defer></script>
-<script src="assets/papers-motion.js?v=11" defer></script>
+<script src="assets/site.js?v=12" defer></script>
+<script src="assets/motion-audio.js?v=12" defer></script>
+<script src="assets/motion.js?v=12" defer></script>
+<script src="assets/papers-motion.js?v=12" defer></script>
 </body>
 </html>

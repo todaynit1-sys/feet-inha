@@ -1,5 +1,6 @@
 /* FEET Lab — 모션 무대 v1 (대표 과제 소개)
-   순수 SVG + JS. 외부 라이브러리·소리 없음. 자막은 HTML.
+   순수 SVG + JS. 외부 라이브러리 없음. 자막은 HTML.
+   소리는 assets/motion-audio.js(있으면, 이 파일보다 먼저 불러옴)가 맡는다 — 기본 꺼짐, 합성음만.
    마크업: <section class="mstage" data-motion="platform"> … </section>
    디버그: 주소 뒤에 ?t=12.5 → 그 시각에서 멈춘 화면 (window.__mstage 로 조작) */
 (function () {
@@ -754,15 +755,23 @@
   }
 
   /* ---------- 장면 목록 ---------- */
+  /* sfx: [장면 안 시각(초), 효과음, 인자] — assets/motion-audio.js 가 타임라인에 맞춰 울린다 */
   var SCENES = [
-    { title: '사각지대', cap: '큰 굴뚝은 실시간으로 감시됩니다. 하지만 전체 배출원의 92% 이상인 소규모 사업장은 감시 사각지대에 있습니다.', dur: 6.5, cam: [800, 450, 1.07], build: sceneBlind },
-    { title: '달리며 잰다', cap: '측정 차량이 산업단지를 돌며 공기 속 입자와 가스를 10초 간격으로 잽니다.', dur: 7, cam: [480, 450, 1.06], build: sceneDrive },
-    { title: '굴뚝에서 직접', cap: '180℃에 이르는 뜨거운 굴뚝 가스도 그대로 뽑아, 입자를 크기별 10단계 이상으로 나눠 분석합니다.', dur: 6.5, cam: [420, 430, 1.08], build: sceneStack },
-    { title: '모아서 추적', cap: '센서·이동 측정·고정 측정 자료를 한곳에 모아, 바람을 거슬러 실제 배출원을 찾아냅니다.', dur: 6.5, cam: [900, 450, 1.06], build: sceneTrace },
-    { title: '관리기관으로', cap: '측정 → 분석 → 시각화. 결과는 관리기관의 감시 체계로 실시간 연결됩니다.', dur: 5.5, cam: [600, 400, 1.06], build: sceneLink }
+    { title: '사각지대', cap: '큰 굴뚝은 실시간으로 감시됩니다. 하지만 전체 배출원의 92% 이상인 소규모 사업장은 감시 사각지대에 있습니다.', dur: 6.5, cam: [800, 450, 1.07], build: sceneBlind,
+      sfx: [[-0.35, 'whoosh'], [0.95, 'ping', 0], [1.7, 'count', 2.6], [4.5, 'ping', 5]] },
+    { title: '달리며 잰다', cap: '측정 차량이 산업단지를 돌며 공기 속 입자와 가스를 10초 간격으로 잽니다.', dur: 7, cam: [480, 450, 1.06], build: sceneDrive,
+      sfx: [[-0.35, 'whoosh'], [1.2, 'ping', 0], [3.0, 'ping', 3], [4.6, 'ping', 7]] },
+    { title: '굴뚝에서 직접', cap: '180℃에 이르는 뜨거운 굴뚝 가스도 그대로 뽑아, 입자를 크기별 10단계 이상으로 나눠 분석합니다.', dur: 6.5, cam: [420, 430, 1.08], build: sceneStack,
+      sfx: [[-0.35, 'whoosh'], [0.8, 'count', 2.2], [3.6, 'ping', 5]] },
+    { title: '모아서 추적', cap: '센서·이동 측정·고정 측정 자료를 한곳에 모아, 바람을 거슬러 실제 배출원을 찾아냅니다.', dur: 6.5, cam: [900, 450, 1.06], build: sceneTrace,
+      sfx: [[-0.35, 'whoosh'], [1.5, 'ping', 0], [3.2, 'ping', 5]] },
+    { title: '관리기관으로', cap: '측정 → 분석 → 시각화. 결과는 관리기관의 감시 체계로 실시간 연결됩니다.', dur: 5.5, cam: [600, 400, 1.06], build: sceneLink,
+      sfx: [[-0.35, 'whoosh'], [0.55, 'ping', 0], [1.15, 'ping', 3], [1.75, 'ping', 7], [3.4, 'ping', 12]] }
   ];
   var XF = 0.45, START = [], TOTAL = 0;
   for (var si = 0; si < SCENES.length; si++) { START.push(TOTAL); TOTAL += SCENES[si].dur; }
+  var AUD = window.FEETAudio || null;
+  var CUES = AUD ? AUD.flatten(SCENES, START, TOTAL) : [];
 
   var ICON_PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
   var ICON_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>';
@@ -869,6 +878,8 @@
     ctrl.appendChild(play); ctrl.appendChild(chipsOl); ctrl.appendChild(restart);
     if (reduced) { play.hidden = true; restart.hidden = true; }
     this.playBtn = play;
+    /* 소리(기본 꺼짐) */
+    this.snd = AUD ? AUD.attach({ theme: 'stage', screen: screen, ctrl: ctrl, btnClass: 'ms-btn' }) : null;
 
     root.insertBefore(ctrl, root.firstChild);
     root.insertBefore(cap, ctrl);
@@ -932,6 +943,7 @@
     this.t = reduced ? this.stillTime(i) : START[i] + (i === 0 ? XF : 0.12);
     this.render();
     this.sync();
+    if (reduced && this.snd) this.snd.sfx('whoosh');
   };
 
   Stage.prototype.sync = function () {
@@ -950,6 +962,7 @@
     this.playBtn.setAttribute('aria-label', showPause ? '일시정지' : '재생');
     this.root.className = this.root.className.replace(' ms-paused', '') + (showPause ? '' : ' ms-paused');
     this.root.classList.toggle('ms-held', this.userPaused && !this.debug);
+    if (this.snd) this.snd.active(this.playing);
   };
 
   Stage.prototype.tick = function (ts) {
@@ -957,8 +970,10 @@
     var self = this;
     var dt = this.last ? Math.min(ts - this.last, 60) / 1000 : 0;
     this.last = ts;
+    var prev = this.t;
     this.t += dt;
     if (this.t >= TOTAL) this.t -= TOTAL;
+    if (this.snd && dt > 0) this.snd.cues(prev, this.t, CUES, TOTAL);
     this.render();
     this.raf = requestAnimationFrame(function (t2) { self.tick(t2); });
   };
@@ -1014,7 +1029,7 @@
     clamp: clamp, seg: seg, eo: eo, eio: eio, back: back, rnd: rnd, f2: f2, lerp: lerp, mod: mod,
     el: el, text: text, A: A, O: O, T: T, vis: vis,
     samplePoly: samplePoly, polyAt: polyAt, bez: bez, bezD: bezD,
-    gestures: gestures, chipIntoView: chipIntoView,
+    gestures: gestures, chipIntoView: chipIntoView, factory: factory,
     ICON_PAUSE: ICON_PAUSE, ICON_PLAY: ICON_PLAY, ICON_RESTART: ICON_RESTART
   };
 

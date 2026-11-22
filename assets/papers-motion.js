@@ -1,7 +1,9 @@
-/* FEET Lab — 논문 모션 플레이어 v1
+/* FEET Lab — 논문 모션 플레이어 v2 (논문마다 장면 수가 달라도 된다)
    assets/motion.js 의 도우미(window.FEETMotionKit)를 그대로 쓴다. motion.js 다음에 불러올 것.
-   마크업: <div class="pm-player" data-papers-motion> … (publications.html)
-   디버그: ?paper=bc&t=12 → 그 논문, 그 시각에서 멈춘 화면. window.__pmotion.seek('amp', 8) */
+   소리: assets/motion-audio.js(있으면). 장면마다 sfx 큐 목록.
+   마크업: <div class="pm-player" data-papers-motion> … (publications.html), 탭 id = paper-<key>
+   논문: voc(5장면), bc(4장면), amp(4장면)
+   디버그: ?paper=voc&t=12 → 그 논문, 그 시각에서 멈춘 화면. window.__pmotion.seek('amp', 8) */
 (function () {
   'use strict';
 
@@ -800,6 +802,441 @@
     };
   }
 
+  /* =========================================================
+     논문 0 — VOC 추적 (Atmospheric Environment 369, 121807)
+     화면의 지도·막대는 개념도: 단지 모양·경로·농도·막대 높이는 실제 측정값이 아니다.
+     강조색은 연두(+하늘색 조금). 주황은 고농도 표현에만. 경보색·사이렌·조준 그림 없음.
+     ========================================================= */
+  var V = { lime: '#A8D65C', sky: '#7DB8F0', hot: '#F2A33A', road: '#0C1D2F', roof: '#15304A', roofL: '#24435F' };
+  var VG = { X0: -190, PX: 150, Y0: -160, PY: 128, RW: 26 };
+  /* 추상 블록(위에서 본 지붕) — 세 장면이 같은 배치를 써서 전환이 끊기지 않는다 */
+  var VBLK = (function () {
+    var out = [], c, r, gap = 7;
+    for (c = 0; c < 12; c++) for (r = 0; r < 11; r++) {
+      var x = VG.X0 + c * VG.PX + VG.RW / 2, y = VG.Y0 + r * VG.PY + VG.RW / 2, w0 = VG.PX - VG.RW, h0 = VG.PY - VG.RW, s = rnd(c * 37 + r * 11 + 5);
+      if (s < 0.28) out.push([x, y, w0, h0]);
+      else if (s < 0.62) {
+        var sw = Math.round(w0 * (0.38 + rnd(c + r * 3 + 1) * 0.24));
+        out.push([x, y, sw - gap / 2, h0], [x + sw + gap / 2, y, w0 - sw - gap / 2, h0]);
+      } else {
+        var hw = (w0 - gap) / 2, hh = (h0 - gap) / 2;
+        out.push([x, y, hw, hh], [x + hw + gap, y, hw, hh], [x, y + hh + gap, hw, hh], [x + hw + gap, y + hh + gap, hw, hh]);
+      }
+    }
+    return out;
+  })();
+  /* 측정 차량 경로(도로 중심선 위) */
+  var VROUTE = [[110, 864], [110, 480], [410, 480], [410, 352], [560, 352], [560, 96], [1010, 96], [1010, 352], [1160, 352], [1160, 736], [710, 736], [710, 608], [260, 608], [260, 864], [110, 864]];
+  /* 개념상의 고농도 구간 세 곳(HA1–HA3) + 통계적으로 뭉치지 않는 약한 봉우리 하나 */
+  var VHOT = [{ x: 410, y: 420, a: 0.86 }, { x: 790, y: 96, a: 0.86 }, { x: 960, y: 736, a: 0.86 }, { x: 470, y: 608, a: 0.3 }];
+  function vConc(x, y) {
+    var v = 0.16 + 0.06 * Math.sin(x * 0.021 + 1.3) + 0.05 * Math.cos(y * 0.017 + x * 0.004);
+    for (var k = 0; k < VHOT.length; k++) {
+      var dx = x - VHOT[k].x, dy = y - VHOT[k].y;
+      v += VHOT[k].a * Math.exp(-(dx * dx + dy * dy) / 7200);
+    }
+    return v;
+  }
+  function vCol(v) { return v >= 0.6 ? V.hot : v >= 0.36 ? V.lime : V.sky; }
+  var VSAMP = K.samplePoly(VROUTE, 600);
+  var VDOTS = (function () {
+    var s = K.samplePoly(VROUTE, 300), out = [];
+    for (var k = 0; k < s.length - 1; k++) out.push({ x: s[k][0], y: s[k][1], v: vConc(s[k][0], s[k][1]), u: k / (s.length - 1) });
+    return out;
+  })();
+  /* 격자 칸(도로 위에 중심) 집계 */
+  var VCW = 75, VCH = 64;
+  var VCELL = (function () {
+    var map = {}, list = [], k;
+    for (k = 0; k < VDOTS.length; k++) {
+      var d = VDOTS[k], i = Math.floor((d.x - VG.X0 + VCW / 2) / VCW), j = Math.floor((d.y - VG.Y0 + VCH / 2) / VCH), key = i + ':' + j;
+      if (!map[key]) { map[key] = { cx: VG.X0 + i * VCW, cy: VG.Y0 + j * VCH, s: 0, n: 0 }; list.push(map[key]); }
+      map[key].s += d.v; map[key].n++;
+      d.cell = map[key];
+    }
+    var groups = [[], [], []];
+    for (k = 0; k < list.length; k++) {
+      var c = list[k];
+      c.v = c.s / c.n;
+      c.grp = -1;
+      if (c.v >= 0.55) {
+        var best = 0, bd = 1e9;
+        for (var q = 0; q < 3; q++) { var dd = Math.pow(c.cx - VHOT[q].x, 2) + Math.pow(c.cy - VHOT[q].y, 2); if (dd < bd) { bd = dd; best = q; } }
+        c.grp = best; groups[best].push(c);
+      }
+    }
+    var boxes = [];
+    for (k = 0; k < 3; k++) {
+      var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (q = 0; q < groups[k].length; q++) {
+        var g = groups[k][q];
+        x0 = Math.min(x0, g.cx - VCW / 2); x1 = Math.max(x1, g.cx + VCW / 2);
+        y0 = Math.min(y0, g.cy - VCH / 2); y1 = Math.max(y1, g.cy + VCH / 2);
+      }
+      boxes.push({ x0: x0 - 8, y0: y0 - 8, x1: x1 + 8, y1: y1 + 8, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 });
+    }
+    return { list: list, boxes: boxes };
+  })();
+
+  /* 공용 바닥: 도로 + 지붕 */
+  function vBase(L) {
+    var g = el('g', {}, L.mid), c, r, d = '';
+    el('rect', { x: -500, y: -500, width: W + 1000, height: H + 1000, fill: V.road }, g);
+    for (c = 0; c <= 12; c++) d += 'M' + (VG.X0 + c * VG.PX) + ' -400V1400';
+    for (r = 0; r <= 11; r++) d += 'M-400 ' + (VG.Y0 + r * VG.PY) + 'H1700';
+    el('path', { d: d, fill: 'none', stroke: '#1C3753', 'class': w(1), 'stroke-dasharray': '10 14' }, g);
+    for (var k = 0; k < VBLK.length; k++) {
+      var b = VBLK[k];
+      el('rect', { x: f2(b[0]), y: f2(b[1]), width: f2(b[2]), height: f2(b[3]), rx: 3, fill: V.roof, stroke: V.roofL, 'class': w(1) }, g);
+      if (rnd(k * 5 + 2) > 0.7) el('rect', { x: f2(b[0] + b[2] * 0.2), y: f2(b[1] + b[3] * 0.25), width: f2(b[2] * 0.22), height: f2(b[3] * 0.3), fill: '#1B3A58' }, g);
+    }
+    return g;
+  }
+  /* 옅은 연기: 여러 지붕에서 피어올라 바람에 섞인다 */
+  function vSmoke(parent, ctx, n, seed) {
+    var fid = ctx.id('b');
+    var fl = el('filter', { id: fid, x: '-80%', y: '-80%', width: '260%', height: '260%' }, ctx.defs);
+    el('feGaussianBlur', { stdDeviation: 9 }, fl);
+    var g = el('g', { filter: 'url(#' + fid + ')', fill: '#A9BCCF' }, parent), list = [];
+    for (var k = 0; k < n; k++) {
+      var b = VBLK[Math.floor(rnd(seed + k * 7) * VBLK.length)];
+      var sx = 60 + rnd(seed + k * 3) * 1080, sy = 60 + rnd(seed + k * 9) * 780;
+      if (b && b[0] > 0 && b[0] < W && b[1] > 0 && b[1] < H) { sx = b[0] + b[2] / 2; sy = b[1] + b[3] / 2; }
+      for (var q = 0; q < 3; q++) list.push({ n: el('circle', { r: 10 }, g), x: sx, y: sy, ph: q / 3 + rnd(seed + k) * 0.3, sp: 0.16 + rnd(seed + k * 13) * 0.1 });
+    }
+    return function (l, amt) {
+      O(g, amt);
+      if (amt <= 0) return;
+      for (var q = 0; q < list.length; q++) {
+        var p = list[q], a = mod(l * p.sp + p.ph, 1);
+        A(p.n, 'cx', p.x + a * 120); A(p.n, 'cy', p.y - a * 46 + Math.sin(a * 5 + q) * 6);
+        A(p.n, 'r', 10 + a * 46);
+        O(p.n, 0.26 * Math.sin(Math.PI * a));
+      }
+    };
+  }
+  function vDots(parent, r) {
+    var g = el('g', {}, parent), list = [];
+    for (var k = 0; k < VDOTS.length; k++) list.push(el('circle', { cx: f2(VDOTS[k].x), cy: f2(VDOTS[k].y), r: r, fill: vCol(VDOTS[k].v) }, g));
+    return { g: g, list: list };
+  }
+  function scrimTL(ctx, hud, r) {
+    var id = ctx.id('sc'), rg2 = el('radialGradient', { id: id, cx: 0.08, cy: 0.06, r: 0.75 }, ctx.defs);
+    el('stop', { offset: 0, 'stop-color': '#0B1A2B', 'stop-opacity': 0.92 }, rg2);
+    el('stop', { offset: 0.6, 'stop-color': '#0B1A2B', 'stop-opacity': 0.7 }, rg2);
+    el('stop', { offset: 1, 'stop-color': '#0B1A2B', 'stop-opacity': 0 }, rg2);
+    return el('rect', { x: 0, y: 0, width: r[0], height: r[1], fill: 'url(#' + id + ')' }, hud);
+  }
+
+  /* 1. 넓고 촘촘한 산업단지 */
+  function vcPark(L, hud, ctx) {
+    vBase(L);
+    var smoke = vSmoke(L.front, ctx, 18, 3);
+    var sid = ctx.id('s'), lg = el('linearGradient', { id: sid, x1: 0, y1: 0, x2: 0, y2: 1 }, ctx.defs);
+    el('stop', { offset: 0, 'stop-color': '#0B1A2B', 'stop-opacity': 0 }, lg);
+    el('stop', { offset: 0.5, 'stop-color': '#0B1A2B', 'stop-opacity': 0.84 }, lg);
+    el('stop', { offset: 1, 'stop-color': '#0B1A2B', 'stop-opacity': 0.96 }, lg);
+    var scrim = el('rect', { x: 0, y: 470, width: W, height: 430, fill: 'url(#' + sid + ')' }, hud);
+    var num = BigNum(ctx, hud, 52, 752, 200, { fill: V.lime });
+    var lab = el('g', {}, hud);
+    txt(lab, 62, 856, '중소 제조시설 (약)', 46, { w: 700 });
+    var area = el('g', {}, hud);
+    el('rect', { x: 846, y: 784, width: 300, height: 86, rx: 43, fill: 'rgba(8,21,34,.86)', stroke: V.sky, 'stroke-width': 2 }, area);
+    txt(area, 996, 844, '15.4 km²', 48, { anchor: 'middle', disp: true, fill: V.sky, w: 600 });
+    return function (l) {
+      smoke(l, 0.4 + 0.6 * seg(l, 0, 1.2));
+      O(scrim, eo(seg(l, 0.6, 1.2)));
+      num.set(seg(l, 1.0, 1.5), comma(Math.round(9000 * eo(seg(l, 1.1, 2.5)) / 100) * 100));
+      fade(lab, l, 1.6, 2.1, 14);
+      fade(area, l, 2.6, 3.1, -12);
+    };
+  }
+
+  /* 2. 달리며 넓게 잰다 */
+  function vcDrive(L, hud, ctx) {
+    vBase(L);
+    var smoke = vSmoke(L.front, ctx, 18, 3);
+    var dd = '';
+    for (var k = 0; k < VROUTE.length; k++) dd += (k ? 'L' : 'M') + VROUTE[k][0] + ' ' + VROUTE[k][1];
+    el('path', { d: dd, fill: 'none', stroke: V.lime, opacity: 0.16, 'class': w(2), 'stroke-linejoin': 'round' }, L.mid);
+    var trail = el('path', { d: dd, fill: 'none', stroke: V.lime, opacity: 0.5, 'class': w(3), 'stroke-linejoin': 'round', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 }, L.mid);
+    var dots = vDots(L.mid, 5.5);
+    /* 측정 차량(위에서 본 모습) */
+    var car = el('g', {}, L.mid);
+    var ring = el('circle', { r: 20, fill: 'none', stroke: V.lime, 'class': w(2) }, car);
+    var body = el('g', {}, car);
+    el('rect', { x: -24, y: -13, width: 48, height: 26, rx: 7, fill: '#E6F2D4', stroke: '#0B1A2B', 'class': w(2) }, body);
+    el('rect', { x: 6, y: -10, width: 13, height: 20, rx: 3, fill: '#2B4866' }, body);
+    el('rect', { x: -16, y: -6, width: 16, height: 12, rx: 2, fill: V.lime }, body);
+    el('circle', { cx: -8, cy: 0, r: 3, fill: '#0B1A2B' }, body);
+
+    var scr0 = scrimTL(ctx, hud, [700, 420]);
+    var num = BigNum(ctx, hud, 52, 190, 160, { fill: V.lime });
+    var sub = el('g', {}, hud);
+    txt(sub, 62, 284, '4초 간격', 42, { w: 700, fill: P.ink });
+    /* 계기판: 스펙트럼 봉우리 */
+    var pan = el('g', {}, hud);
+    el('rect', { x: 330, y: 764, width: 360, height: 120, rx: 18, fill: 'rgba(8,21,34,.9)', stroke: '#2B4866', 'stroke-width': 2 }, pan);
+    txt(pan, 352, 806, 'SIFT-MS', 34, { disp: true, fill: P.mute, w: 600 });
+    var bars = [], NB = 22, pk = [0.18, 0.41, 0.63, 0.86];
+    for (k = 0; k < NB; k++) {
+      var base = 0.12;
+      for (var q = 0; q < pk.length; q++) base += Math.exp(-Math.pow((k / (NB - 1) - pk[q]) / 0.05, 2)) * (0.55 + 0.35 * rnd(q + 3));
+      bars.push({ n: el('rect', { x: 352 + k * 14.6, width: 9, rx: 2, fill: V.lime }, pan), b: Math.min(base, 1), ph: rnd(k * 7) * 6.28 });
+    }
+    return function (l) {
+      var q2, p = eio(seg(l, 0.5, 4.8));
+      smoke(l, 0.6 - 0.35 * seg(l, 0, 3));
+      A(trail, 'stroke-dashoffset', f2(1 - p));
+      for (q2 = 0; q2 < dots.list.length; q2++) {
+        var dt = VDOTS[q2], on = dt.u <= p;
+        O(dots.list[q2], on ? 0.95 : 0);
+        if (on) A(dots.list[q2], 'r', 5.5 + 4 * clamp(1 - (p - dt.u) * 30, 0, 1));
+      }
+      var cp = K.polyAt(VSAMP, p);
+      T(car, 'translate(' + f2(cp[0]) + ',' + f2(cp[1]) + ')');
+      T(body, 'rotate(' + f2(cp[2] * 180 / Math.PI) + ')');
+      O(car, seg(l, 0.1, 0.5));
+      var a = mod(l * 1.25, 1);
+      A(ring, 'r', 18 + 30 * a); O(ring, (1 - a) * 0.8 * (p < 1 ? 1 : 0));
+      var vNow = vConc(cp[0], cp[1]);
+      O(scr0, eo(seg(l, 0.3, 0.8)));
+      num.set(seg(l, 0.4, 0.9), Math.round(80 * p) + ' km');
+      fade(sub, l, 1.0, 1.5, 12);
+      O(pan, eo(seg(l, 0.6, 1.1)));
+      for (q2 = 0; q2 < bars.length; q2++) {
+        var bb = bars[q2], hgt = 4 + 54 * bb.b * (0.55 + 0.45 * (0.5 + 0.5 * Math.sin(l * 7 + bb.ph))) * (0.7 + 0.5 * clamp(vNow, 0, 1));
+        A(bb.n, 'y', 870 - hgt); A(bb.n, 'height', hgt);
+        A(bb.n, 'fill', bb.b > 0.6 && vNow >= 0.6 ? V.hot : V.lime);
+      }
+    };
+  }
+
+  /* 3. 통계로 고농도 지역을 찾는다 */
+  function vcHot(L, hud, ctx) {
+    vBase(L);
+    var k, q;
+    var dd = '';
+    for (k = 0; k < VROUTE.length; k++) dd += (k ? 'L' : 'M') + VROUTE[k][0] + ' ' + VROUTE[k][1];
+    var line = el('path', { d: dd, fill: 'none', stroke: V.lime, opacity: 0.5, 'class': w(3), 'stroke-linejoin': 'round' }, L.mid);
+    var cg = el('g', {}, L.mid), cells = [];
+    for (k = 0; k < VCELL.list.length; k++) {
+      var c = VCELL.list[k];
+      cells.push({ c: c, n: el('rect', { x: f2(c.cx - VCW / 2 + 3), y: f2(c.cy - VCH / 2 + 3), width: VCW - 6, height: VCH - 6, rx: 5, fill: c.v >= 0.36 ? 'rgba(168,214,92,.3)' : 'rgba(125,184,240,.18)', stroke: c.v >= 0.36 ? V.lime : V.sky, 'class': w(1) }, cg), at: 1.1 + rnd(k * 3) * 0.5 });
+    }
+    var dots = vDots(L.mid, 5.5);
+    var outs = [];
+    for (k = 0; k < 3; k++) {
+      var b = VCELL.boxes[k];
+      outs.push(el('rect', { x: f2(b.x0), y: f2(b.y0), width: f2(b.x1 - b.x0), height: f2(b.y1 - b.y0), rx: 10, fill: 'none', stroke: '#FFFFFF', 'class': w(3), pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 }, L.mid));
+    }
+    var scr0 = scrimTL(ctx, hud, [640, 320]);
+    var tag = el('g', {}, hud);
+    txt(tag, 62, 108, 'Getis-Ord Gi*', 44, { disp: true, fill: P.ink, w: 600 });
+    /* 표지 자리: [정렬, x 보정, y 보정, 기준(가운데 아래 b / 가운데 위 t / 왼쪽 l)] */
+    var labs = [], LP = [['end', -18, 18, 'l'], ['middle', 0, 66, 'b'], ['middle', 0, -22, 't']];
+    for (k = 0; k < 3; k++) {
+      var lg2 = el('g', {}, hud);
+      var t2 = txt(lg2, 0, 0, 'HA' + (k + 1), 56, { disp: true, anchor: LP[k][0], fill: '#FFFFFF', w: 700 });
+      t2.setAttribute('stroke', '#0B1A2B'); t2.setAttribute('stroke-width', 12); t2.setAttribute('paint-order', 'stroke'); t2.setAttribute('stroke-linejoin', 'round');
+      labs.push({ g: lg2, t: t2 });
+    }
+    var conf = el('g', {}, hud);
+    el('rect', { x: 352, y: 786, width: 316, height: 80, rx: 40, fill: 'rgba(8,21,34,.9)', stroke: V.lime, 'stroke-width': 2 }, conf);
+    txt(conf, 510, 840, '95% 신뢰수준', 40, { anchor: 'middle', w: 700 });
+
+    return function (l, cam, d) {
+      var gather = eio(seg(l, 0.7, 1.6));
+      for (q = 0; q < dots.list.length; q++) {
+        var dt = VDOTS[q];
+        A(dots.list[q], 'cx', f2(lerp(dt.x, dt.cell.cx, gather)));
+        A(dots.list[q], 'cy', f2(lerp(dt.y, dt.cell.cy, gather)));
+        A(dots.list[q], 'r', lerp(5.5, 2.5, gather));
+        O(dots.list[q], 0.95 - 0.8 * seg(l, 1.3, 1.9));
+      }
+      O(line, 0.5 * (1 - seg(l, 0.6, 1.4)));
+      for (q = 0; q < cells.length; q++) {
+        var ce = cells[q], g2 = ce.c.grp, lit = g2 >= 0 ? eo(seg(l, 2.1 + g2 * 0.35, 2.4 + g2 * 0.35)) : 0;
+        O(ce.n, seg(l, ce.at, ce.at + 0.4) * (g2 >= 0 ? 1 : 1 - 0.45 * seg(l, 2.0, 2.6)));
+        if (g2 >= 0) {
+          A(ce.n, 'fill', lit > 0 ? 'rgba(242,163,58,' + f2(0.25 + 0.45 * lit) + ')' : 'rgba(168,214,92,.3)');
+          A(ce.n, 'stroke', lit > 0.4 ? V.hot : V.lime);
+        }
+      }
+      var hideE = 1 - seg(l, d - 0.9, d - 0.6);
+      for (q = 0; q < 3; q++) {
+        var st = 2.1 + q * 0.35;
+        A(outs[q], 'stroke-dashoffset', f2(1 - eo(seg(l, st, st + 0.45))));
+        O(outs[q], seg(l, st, st + 0.1));
+        var b2 = VCELL.boxes[q], md = LP[q][3], ax = md === 'l' ? b2.x0 : b2.cx, ay = md === 'b' ? b2.y1 : md === 't' ? b2.y0 : b2.cy;
+        var sp = scr(cam, ax, ay);
+        A(labs[q].t, 'x', f2(sp[0] + LP[q][1])); A(labs[q].t, 'y', f2(sp[1] + LP[q][2]));
+        var e = eo(seg(l, st + 0.15, st + 0.5));
+        O(labs[q].g, e * hideE);
+      }
+      O(scr0, eo(seg(l, 0.2, 0.7)) * hideE);
+      fade(tag, l, 0.3, 0.8, 12); O(tag, eo(seg(l, 0.3, 0.8)) * hideE);
+      fade(conf, l, 3.3, 3.8, 14); O(conf, eo(seg(l, 3.3, 3.8)) * hideE);
+    };
+  }
+
+  /* 4. 드론으로 위에서 확인한다 (옆에서 본 모습) */
+  var VD = { gy: 740, px: 20, tx: 650, ty: 250, roofY: 520 };
+  function vcDrone(L, hud, ctx) {
+    var k, GY = VD.gy;
+    /* 먼 공장 실루엣 */
+    for (k = 0; k < 9; k++) {
+      var fg = K.factory(L.back, '#10253B', '#1A3550', 2);
+      T(fg, 'translate(' + (-60 + k * 160 + rnd(k) * 40) + ',' + (GY - 30) + ') scale(' + f2(1.3 + rnd(k * 3) * 0.5) + ')');
+    }
+    el('rect', { x: -400, y: GY, width: W + 800, height: 500, fill: '#0A1726' }, L.mid);
+    el('line', { x1: -400, y1: GY, x2: W + 400, y2: GY, stroke: '#2B4866', 'class': w(2) }, L.mid);
+    /* 고도 눈금 */
+    var rul = el('g', {}, L.mid);
+    el('line', { x1: 70, y1: GY, x2: 70, y2: GY - 32 * VD.px, stroke: P.dim, 'class': w(2) }, rul);
+    for (k = 0; k <= 30; k += 5) el('line', { x1: 70, y1: GY - k * VD.px, x2: k % 10 ? 82 : 90, y2: GY - k * VD.px, stroke: P.dim, 'class': w(2) }, rul);
+    var band = el('rect', { x: 58, y: GY - 30 * VD.px, width: 44, height: 10 * VD.px, rx: 6, fill: 'rgba(168,214,92,.22)', stroke: V.lime, 'class': w(2) }, L.mid);
+    /* 건물 */
+    var bl = [[-140, 180, 150], [210, 480, 185], [530, 780, 220], [820, 950, 120]];
+    for (k = 0; k < bl.length; k++) {
+      var bx = bl[k];
+      el('rect', { x: bx[0], y: GY - bx[2], width: bx[1] - bx[0], height: bx[2], fill: '#132B43', stroke: '#2B4866', 'class': w(2) }, L.mid);
+      for (var q = 0; q < 3; q++) el('rect', { x: f2(bx[0] + 30 + q * (bx[1] - bx[0] - 70) / 2), y: GY - bx[2] - 14, width: 22, height: 14, fill: '#1B3A58', stroke: '#2B4866', 'class': w(1) }, L.mid);
+    }
+    /* 고농도 지점에서 오르는 옅은 기체(주황), 다른 지붕은 회색 */
+    var puffs = [], pg = el('g', {}, L.mid);
+    for (k = 0; k < 14; k++) {
+      var hotP = k < 8;
+      puffs.push({ n: el('circle', { r: 8, fill: hotP ? V.hot : '#8EA2B7' }, pg), x: hotP ? 700 : [300, 120, 880][k % 3], y: hotP ? GY - 234 : [GY - 199, GY - 164, GY - 134][k % 3], ph: rnd(k * 5) , hot: hotP });
+    }
+    /* 지상 측정 차량(정차) */
+    var van = el('g', {}, L.mid);
+    el('rect', { x: 1010, y: GY - 64, width: 150, height: 46, rx: 9, fill: '#183650', stroke: V.lime, 'class': w(2) }, van);
+    el('rect', { x: 1124, y: GY - 58, width: 28, height: 20, rx: 4, fill: '#2B4866' }, van);
+    el('circle', { cx: 1042, cy: GY - 14, r: 13, fill: '#0B1A2B', stroke: '#56718D', 'class': w(2) }, van);
+    el('circle', { cx: 1130, cy: GY - 14, r: 13, fill: '#0B1A2B', stroke: '#56718D', 'class': w(2) }, van);
+    el('line', { x1: 1048, y1: GY - 64, x2: 1048, y2: GY - 122, stroke: P.line, 'class': w(2) }, van);
+    el('circle', { cx: 1048, cy: GY - 126, r: 6, fill: V.lime }, van);
+    var vring = el('circle', { cx: 1048, cy: GY - 126, r: 10, fill: 'none', stroke: V.lime, 'class': w(2) }, van);
+    /* 훑어보는 빛 */
+    var cone = el('path', { fill: V.lime, opacity: 0 }, L.mid);
+    /* 드론 */
+    var dr = el('g', {}, L.mid), drIn = el('g', {}, dr);
+    var rod = el('line', { x1: 0, y1: 14, x2: 0, y2: 14, stroke: P.line, 'class': w(3), 'stroke-linecap': 'round' }, drIn);
+    var bag = el('ellipse', { cx: 0, cy: 0, rx: 0, ry: 0, fill: 'rgba(168,214,92,.3)', stroke: V.lime, 'class': w(2) }, drIn);
+    el('line', { x1: -44, y1: -8, x2: 44, y2: -8, stroke: P.line, 'class': w(3), 'stroke-linecap': 'round' }, drIn);
+    el('line', { x1: -40, y1: -8, x2: -40, y2: -16, stroke: P.line, 'class': w(3) }, drIn);
+    el('line', { x1: 40, y1: -8, x2: 40, y2: -16, stroke: P.line, 'class': w(3) }, drIn);
+    el('rect', { x: -30, y: -10, width: 60, height: 22, rx: 8, fill: '#DCE7F2' }, drIn);
+    el('rect', { x: -9, y: 8, width: 18, height: 9, rx: 3, fill: V.lime }, drIn);
+    var rot = [el('ellipse', { cx: -40, cy: -18, rx: 26, ry: 3.2, fill: 'rgba(220,231,242,.75)' }, drIn), el('ellipse', { cx: 40, cy: -18, rx: 26, ry: 3.2, fill: 'rgba(220,231,242,.75)' }, drIn)];
+
+    var alt = el('g', {}, hud);
+    var altT = txt(alt, 0, 0, '20–30 m', 48, { disp: true, fill: V.lime, w: 700 });
+    var bagL = el('g', {}, hud);
+    var lead = el('polyline', { fill: 'none', stroke: V.lime, 'stroke-width': 2 }, bagL);
+    var bagT = txt(bagL, 0, 0, '시료 채취 백', 40, { w: 700 });
+
+    function dpos(l) {
+      var e1 = eio(seg(l, 0.6, 1.7)), e2 = eio(seg(l, 1.8, 3.0));
+      var x = lerp(1100, VD.tx, e2), y = lerp(GY - 80, VD.ty, e1);
+      return [x, y, e2 > 0 && e2 < 1 ? (seg(l, 1.8, 2.4) - seg(l, 2.4, 3.0)) : 0];
+    }
+    return function (l, cam) {
+      var q2, a;
+      var p = dpos(l), bob = Math.sin(l * 2.3) * 3 * seg(l, 0.6, 1.0);
+      var dx = p[0], dy = p[1] + bob;
+      T(dr, 'translate(' + f2(dx) + ',' + f2(dy) + ')');
+      T(drIn, 'rotate(' + f2(-7 * p[2] + Math.sin(l * 1.7) * 1.2) + ')');
+      for (q2 = 0; q2 < 2; q2++) A(rot[q2], 'rx', f2(4 + 24 * Math.abs(Math.cos(l * 38 + q2 * 1.3))));
+      var rl = 78 * eo(seg(l, 3.0, 3.4));
+      A(rod, 'y2', f2(14 + rl));
+      var bi = eo(seg(l, 3.4, 4.6)), bry = lerp(6, 30, bi);
+      A(bag, 'cy', f2(14 + rl + bry)); A(bag, 'rx', f2(lerp(4, 22, bi) * (1 + 0.03 * Math.sin(l * 4)))); A(bag, 'ry', f2(bry));
+      O(bag, seg(l, 3.35, 3.5));
+      /* 훑는 빛: 건물 지붕까지 */
+      var over = dx > 560 && dx < 760, sc = seg(l, 1.7, 1.9) * (1 - seg(l, 3.0, 3.3));
+      A(cone, 'd', 'M' + f2(dx - 8) + ' ' + f2(dy + 16) + 'L' + f2(dx - 64) + ' ' + VD.roofY + 'L' + f2(dx + 64) + ' ' + VD.roofY + 'L' + f2(dx + 8) + ' ' + f2(dy + 16) + 'Z');
+      A(cone, 'fill', over ? V.hot : V.lime);
+      O(cone, sc * (over ? 0.2 : 0.12));
+      for (q2 = 0; q2 < puffs.length; q2++) {
+        var pf = puffs[q2]; a = mod(l * (pf.hot ? 0.32 : 0.22) + pf.ph, 1);
+        A(pf.n, 'cx', f2(pf.x + a * 70 + Math.sin(a * 6 + q2) * 6)); A(pf.n, 'cy', f2(pf.y - a * 150));
+        A(pf.n, 'r', f2(7 + a * 26)); O(pf.n, (pf.hot ? 0.3 : 0.14) * Math.sin(Math.PI * a));
+      }
+      a = mod(l * 0.9, 1);
+      A(vring, 'r', 8 + 22 * a); O(vring, 1 - a);
+      O(band, eo(seg(l, 0.9, 1.4)));
+      var sp = scr(cam, 112, VD.gy - 25 * VD.px);
+      A(altT, 'x', f2(sp[0])); A(altT, 'y', f2(sp[1] + 17));
+      O(alt, eo(seg(l, 1.0, 1.5)));
+      var bp = scr(cam, dx + 24, dy + 14 + rl + bry);
+      A(bagT, 'x', 852); A(bagT, 'y', 470);
+      A(lead, 'points', f2(bp[0]) + ',' + f2(bp[1]) + ' ' + f2(lerp(bp[0], 838, eo(seg(l, 3.9, 4.3)))) + ',' + f2(lerp(bp[1], 456, eo(seg(l, 3.9, 4.3)))));
+      O(bagL, eo(seg(l, 3.9, 4.3)));
+    };
+  }
+
+  /* 5. 서로 다른 화학 조성 — 개념도: 수치·축 눈금 없음 */
+  var VPROF = [
+    { t: 'HA1', dom: ['톨루엔 · ', '자일렌+에틸벤젠'], near: '화학제품 제조시설 인근', h: [1.0, 0.78, 0.2, 0.14, 0.22, 0.16], hi: [0, 1] },
+    { t: 'HA2', dom: ['메틸에틸케톤(MEK) · ', '톨루엔'], near: '페인트 제조시설 인근', h: [0.74, 0.18, 1.0, 0.16, 0.2, 0.24], hi: [2, 0] },
+    { t: 'HA3', dom: ['톨루엔 · 아크롤레인'], near: '도장시설 인근', h: [1.0, 0.2, 0.16, 0.7, 0.22, 0.18], hi: [0, 3] }
+  ];
+  function vcProfile(L, hud, ctx) {
+    var k, q, base = 640, MAXH = 262, BW = 34, GAP = 16;
+    var dB = dust(L.back, 30, 511, { a: 0.3 });
+    var cols = [];
+    for (k = 0; k < 3; k++) {
+      var pr = VPROF[k], cx = 200 + k * 400, x0 = cx - (6 * BW + 5 * GAP) / 2;
+      if (k) el('line', { x1: cx - 200, y1: 120, x2: cx - 200, y2: 740, stroke: '#1E3A57', 'class': w(2) }, L.mid);
+      el('line', { x1: x0 - 14, y1: base, x2: x0 + 6 * BW + 5 * GAP + 14, y2: base, stroke: P.dim, 'class': w(2) }, L.mid);
+      var gb = [], db = [];
+      for (q = 0; q < 6; q++) {
+        var isHi = pr.hi.indexOf(q) >= 0, bx = x0 + q * (BW + GAP);
+        gb.push(el('rect', { x: bx, width: BW, y: base, height: 0, rx: 3, fill: isHi ? V.lime : '#4A6582' }, L.mid));
+        db.push(el('rect', { x: bx + 8, width: BW, y: base, height: 0, rx: 3, fill: 'none', stroke: V.sky, 'class': w(3), 'stroke-dasharray': '7 5' }, L.mid));
+      }
+      var glow = el('rect', { x: x0 - 18, y: base - MAXH - 24, width: 6 * BW + 5 * GAP + 44, height: MAXH + 40, rx: 14, fill: 'none', stroke: V.lime, 'class': w(2) }, L.mid);
+      var head = el('g', {}, hud);
+      txt(head, cx, 172, pr.t, 60, { disp: true, anchor: 'middle', fill: '#FFFFFF', w: 700 });
+      var dom = el('g', {}, hud);
+      var dt = txt(dom, cx, 234, '', 36, { anchor: 'middle', fill: V.lime, w: 700 });
+      for (q = 0; q < pr.dom.length; q++) {
+        var ts = el('tspan', { x: cx, dy: q ? 44 : 0 }, dt);
+        ts.textContent = pr.dom[q];
+      }
+      var near = el('g', {}, hud);
+      txt(near, cx, 704, pr.near, 36, { anchor: 'middle', fill: P.mute, w: 600 });
+      cols.push({ gb: gb, db: db, h: pr.h, glow: glow, head: head, dom: dom, near: near, d: k * 0.3 });
+    }
+    var leg = el('g', {}, hud);
+    el('rect', { x: 392, y: 806, width: 34, height: 34, rx: 4, fill: V.lime }, leg);
+    txt(leg, 440, 836, '지상', 38, { w: 700 });
+    el('rect', { x: 620, y: 806, width: 34, height: 34, rx: 4, fill: 'none', stroke: V.sky, 'stroke-width': 3, 'stroke-dasharray': '7 5' }, leg);
+    txt(leg, 668, 836, '드론', 38, { w: 700 });
+
+    return function (l) {
+      dB(l);
+      for (k = 0; k < cols.length; k++) {
+        var c = cols[k], d = c.d;
+        fade(c.head, l, 0.3 + d, 0.8 + d, 12);
+        for (q = 0; q < 6; q++) {
+          var hg = MAXH * c.h[q] * eo(seg(l, 0.6 + d + q * 0.05, 1.4 + d + q * 0.05));
+          A(c.gb[q], 'y', base - hg); A(c.gb[q], 'height', hg);
+          var hd = MAXH * c.h[q] * eo(seg(l, 1.6 + d + q * 0.05, 2.3 + d + q * 0.05));
+          A(c.db[q], 'y', base - hd); A(c.db[q], 'height', hd);
+          O(c.db[q], seg(l, 1.6 + d, 1.8 + d));
+        }
+        fade(c.dom, l, 1.3 + d, 1.8 + d, 10);
+        var m = seg(l, 2.3 + d, 2.9 + d);
+        O(c.glow, m > 0 ? 0.15 + 0.6 * Math.sin(Math.PI * Math.min(m * 1.4, 1)) * (m < 1 ? 1 : 0) + (m >= 1 ? 0.15 : 0) : 0);
+        fade(c.near, l, 2.7 + d, 3.2 + d, 10);
+      }
+      fade(leg, l, 1.5, 2.0, 10);
+    };
+  }
+
   /* ---------- 카메라 ---------- */
   /* 기본: 한 점을 두고 천천히 밀어 들어간다 */
   function push(fx, fy, s0, s1) {
@@ -826,9 +1263,33 @@
   }
 
   var bcFocus = { x: BC2.x0 + BC2.fc * BC2.p, y: BC2.y0 + BC2.fr * BC2.p };
+  var vHA2 = VCELL.boxes[1];
+  /* sfx: [장면 안 시각(초), 효과음, 인자] — 장면 시작 전(음수)은 전환 소리 */
   var PAPERS = [
     {
-      key: 'bc', name: '블랙카본', accent: P.ember,
+      key: 'voc', name: 'VOC 추적', accent: V.lime, oa: false,
+      journal: 'Atmospheric Environment', year: '2026', cite: 'Atmospheric Environment 369, 121807 (2026)',
+      title: 'Advancing VOC management: A mobile and drone-based approach for industrial emission monitoring',
+      sum: '측정 차량과 드론을 단계적으로 결합해 산업단지의 VOC 배출원을 구분한 연구',
+      authors: '<em>Cheonwoong Kang</em>, Hyunjun Shin, Hyunjeong Seo, <em>Hanjin Yoo</em>, <em>Ki-Joon Jeon</em>',
+      auNote: 'Kang, Shin 공동 제1저자 · Jeon 교신저자',
+      note: '화면의 지도·막대는 이해를 돕기 위한 개념도이며, 실제 측정값은 논문 원문에 있습니다.',
+      doi: 'https://doi.org/10.1016/j.atmosenv.2026.121807',
+      scenes: [
+        { title: '넓고 촘촘한 산업단지', cap: '안산의 B 국가산업단지. 15.4 km²에 중소 제조시설 약 9,000곳이 모여 있어,\n휘발성유기화합물(VOC)이 어디서 나오는지 가려내기 어렵습니다.', dur: 5.0, inT: 'fade', build: vcPark,
+          cam: push(600, 450, 2.3, 1.0), sfx: [[-0.35, 'whoosh'], [1.1, 'count', 1.4], [2.65, 'ping', 5]] },
+        { title: '달리며 넓게 잰다', cap: '선택이온유동관 질량분석기(SIFT-MS)를 실은 측정 차량이\n약 80 km 경로를 달리며 4초마다 공기를 분석했습니다.', dur: 5.6, inT: 'fade', build: vcDrive,
+          cam: push(600, 450, 1.0, 1.03), sfx: [[-0.35, 'whoosh'], [0.55, 'count', 4.25], [1.05, 'ping', 0]] },
+        { title: '통계로 고농도 지역을 찾는다', cap: '공간 통계(Getis-Ord Gi*)로 농도가 높은 구간이 뭉친 곳을 찾아,\n우선 조사 지역 세 곳을 정했습니다.', dur: 5.4, inT: 'fade', build: vcHot,
+          cam: zoomOut(push(600, 450, 1.0, 1.03), vHA2.cx, vHA2.cy, 2.4), sfx: [[-0.35, 'whoosh'], [2.15, 'ping', 0], [2.5, 'ping', 3], [2.85, 'ping', 7], [3.35, 'ping', 12]] },
+        { title: '드론으로 위에서 확인한다', cap: '드론이 세 지역 상공 20~30 m에서 총휘발성유기화합물(TVOC)이 높은 지점을 찾아\n공기 시료를 채취하고, 같은 SIFT-MS로 분석했습니다.', dur: 5.6, inT: 'match', build: vcDrone,
+          cam: zoomIn(push(620, 450, 1.0, 1.04), 655, VD.roofY, 2.2, 1.5), sfx: [[0, 'boom'], [1.05, 'ping', 0], [3.0, 'ping', 5], [3.95, 'ping', 7]] },
+        { title: '서로 다른 화학 조성', cap: '지상과 상공에서 같은 화학 조성이 확인됐고,\n인접한 세 지점은 서로 다른 조성으로 구분됐습니다.', dur: 5.2, inT: 'wipe', build: vcProfile,
+          cam: push(600, 450, 1.0, 1.03), sfx: [[-0.5, 'whoosh'], [2.35, 'ping', 0], [2.65, 'ping', 3], [2.95, 'ping', 7]] }
+      ]
+    },
+    {
+      key: 'bc', name: '블랙카본', accent: P.ember, oa: true,
       journal: 'Nature Communications', year: '2025', cite: 'Nature Communications 16, 10187 (2025)',
       title: 'Locating the missing absorption enhancement due to multi-core black carbon aerosols',
       sum: '블랙카본 입자 속 ‘여러 개의 핵’이 빛을 더 많이 흡수한다는 것을 밝힌 연구',
@@ -836,17 +1297,17 @@
       doi: 'https://doi.org/10.1038/s41467-025-65079-2',
       scenes: [
         { title: '모델의 가정', cap: '기후 모델은 블랙카본 입자 하나에\n핵이 하나라고 가정해 왔습니다.', dur: 5.0, inT: 'fade', build: bcModel,
-          cam: zoomOut(push(BC1.x, BC1.y, 1.0, 1.05), BC1.x, BC1.y, MATCH_R / BC1.R) },
+          cam: zoomOut(push(BC1.x, BC1.y, 1.0, 1.05), BC1.x, BC1.y, MATCH_R / BC1.R), sfx: [[-0.35, 'whoosh'], [1.85, 'ping', 0]] },
         { title: '21%', cap: '산불 연기를 들여다보니,\n블랙카본 입자의 21%에는 핵이 여러 개 있었습니다.', dur: 5.2, inT: 'match', build: bcShare,
-          cam: zoomIn(push(860, 450, 1.0, 1.04), bcFocus.x, bcFocus.y, MATCH_R / BC2.r, 1.5) },
+          cam: zoomIn(push(860, 450, 1.0, 1.04), bcFocus.x, bcFocus.y, MATCH_R / BC2.r, 1.5), sfx: [[0, 'boom'], [1.7, 'count', 1.8], [2.15, 'ping', 5]] },
         { title: '1.81배', cap: '핵이 여러 개인 큰 입자는 핵 하나로 계산했을 때보다\n빛을 1.81배 흡수합니다.', dur: 5.6, inT: 'wipe', build: bcRatio,
-          cam: zoomOut(push(600, 420, 1.0, 1.04), BC3.rx, BC3.y, 280 / BC3.R) },
+          cam: zoomOut(push(600, 420, 1.0, 1.04), BC3.rx, BC3.y, 280 / BC3.R), sfx: [[-0.5, 'whoosh'], [2.2, 'count', 1.2], [2.85, 'ping', 5]] },
         { title: '+19%', cap: '이 효과를 전 지구 모델에 넣으면 에어로졸의 빛 흡수가 19% 늘어납니다.\n산불 영향 지역에서 특히 큽니다.', dur: 5.4, inT: 'match', build: bcGlobe,
-          cam: zoomIn(push(BC4.x, BC4.y, 1.0, 1.04), BC4.x, BC4.y, 280 / BC4.R, 1.6) }
+          cam: zoomIn(push(BC4.x, BC4.y, 1.0, 1.04), BC4.x, BC4.y, 280 / BC4.R, 1.6), sfx: [[0, 'boom'], [2.0, 'count', 1.4], [2.65, 'ping', 5]] }
       ]
     },
     {
-      key: 'amp', name: '미세플라스틱', accent: P.teal,
+      key: 'amp', name: '미세플라스틱', accent: P.teal, oa: true,
       journal: 'Environment International', year: '2026', cite: 'Environment International 212, 110288 (2026)',
       title: 'Inhalable airborne microplastics in urban air: single-particle evidence of diurnal variability and physicochemical characteristics',
       sum: '도시 공기 속 숨으로 들어오는 미세플라스틱을 입자 하나씩 분석한 연구',
@@ -854,24 +1315,26 @@
       doi: 'https://doi.org/10.1016/j.envint.2026.110288',
       scenes: [
         { title: '숨 쉬는 공기 속', cap: '도시 공기 속 미세먼지(PM10)에는 플라스틱 조각도 섞여 있습니다.\n얼마나, 어떤 모습일까요.', dur: 5.0, inT: 'fade', build: amAir,
-          cam: zoomOut(push(600, 420, 1.0, 1.05), AM1.x, AM1.y, MATCH_R / AM1.s) },
+          cam: zoomOut(push(600, 420, 1.0, 1.05), AM1.x, AM1.y, MATCH_R / AM1.s), sfx: [[-0.35, 'whoosh'], [0.85, 'ping', 0], [2.45, 'ping', 5]] },
         { title: '입자 하나씩', cap: '형광 현미경, 라만 분광, 전자현미경을 묶어\n입자 하나하나를 확인했습니다.', dur: 5.6, inT: 'match', build: amLens,
-          cam: zoomIn(push(AM2.x, AM2.y, 1.0, 1.04), AM2.x, AM2.y, MATCH_R / AM2.s, 1.3) },
+          cam: zoomIn(push(AM2.x, AM2.y, 1.0, 1.04), AM2.x, AM2.y, MATCH_R / AM2.s, 1.3), sfx: [[0, 'boom'], [0.95, 'ping', 0], [2.1, 'ping', 3], [3.25, 'ping', 7]] },
         { title: '밤에 60% 더', cap: '공기 1㎥에 평균 약 1,300개.\n밤에는 낮보다 약 60% 더 많았습니다.', dur: 5.6, inT: 'wipe', build: amNight,
-          cam: push(700, 560, 1.0, 1.04) },
+          cam: push(700, 560, 1.0, 1.04), sfx: [[-0.5, 'whoosh'], [0.7, 'count', 1.2], [2.9, 'count', 1.0]] },
         { title: '폐 깊숙이', cap: '95%가 10㎛보다 작고, 약 40%는 2.5㎛보다 작았습니다.\n대기 중 농도는 주로 기상 조건이 좌우했습니다.', dur: 5.4, inT: 'wipe', build: amSize,
-          cam: push(560, 560, 1.0, 1.04) }
+          cam: push(560, 560, 1.0, 1.04), sfx: [[-0.5, 'whoosh'], [2.2, 'count', 0.9], [2.9, 'count', 0.9]] }
       ]
     }
   ];
   var XT = { fade: 0.5, match: 0.15, wipe: 0.55 };
   var PARA = [['back', 0.55, 0.5], ['mid', 1, 1], ['front', 1.3, 1.8]]; /* 층, 확대 비율, 흐름 비율 */
 
+  var AUD = window.FEETAudio || null;
   for (var pi0 = 0; pi0 < PAPERS.length; pi0++) {
     var pp0 = PAPERS[pi0], acc = 0;
     pp0.starts = [];
     for (var s0 = 0; s0 < pp0.scenes.length; s0++) { pp0.starts.push(acc); acc += pp0.scenes[s0].dur; }
     pp0.total = acc;
+    pp0.cues = AUD ? AUD.flatten(pp0.scenes, pp0.starts, acc) : [];
   }
 
   var ICON_EXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></svg>';
@@ -955,17 +1418,20 @@
       '<div class="pm-meta"><span class="pm-chip pm-jr"></span><span class="pm-chip pm-yr"></span><span class="pm-chip pm-oa">Open access</span></div>' +
       '<h3 class="pm-ti" lang="en"></h3>' +
       '<p class="pm-sum"></p>' +
-      '<p class="pm-au" lang="en"></p>' +
+      '<div class="pm-aublock"><p class="pm-au" lang="en"></p><p class="pm-aunote"></p></div>' +
       '<div class="pm-now"><p class="pm-scene"><b></b><span></span></p><p class="pm-cap" aria-live="polite"></p></div>' +
       '<div class="pm-ctrl"><button type="button" class="pm-btn pm-play"></button><ol class="pm-chips" aria-label="장면 목록"></ol>' +
       '<button type="button" class="pm-btn pm-restart" aria-label="처음부터 다시 보기">' + K.ICON_RESTART + '</button>' +
-      '<a class="pm-doi" target="_blank" rel="noopener"><span>원문 보기</span>' + ICON_EXT + '</a></div>';
+      '<a class="pm-doi" target="_blank" rel="noopener"><span>원문 보기</span>' + ICON_EXT + '</a></div>' +
+      '<p class="pm-note"></p>';
     this.q = function (s) { return info.querySelector(s); };
     this.nowEl = this.q('.pm-now');
     this.playBtn = this.q('.pm-play');
     this.restartBtn = this.q('.pm-restart');
     if (reduced) { this.playBtn.hidden = true; this.restartBtn.hidden = true; }
     this.chipsOl = this.q('.pm-chips');
+    /* 소리(기본 꺼짐) — 스피커 버튼은 '원문 보기' 앞에 */
+    this.snd = AUD ? AUD.attach({ theme: PAPERS[0].key, screen: screen, ctrl: this.q('.pm-ctrl'), before: this.q('.pm-doi'), btnClass: 'pm-btn' }) : null;
 
     this.playBtn.addEventListener('click', function () {
       if (self.userPaused || self.debug) { self.userPaused = false; self.debug = false; }
@@ -1061,13 +1527,19 @@
     /* 패널 */
     this.q('.pm-jr').textContent = pp.journal;
     this.q('.pm-yr').textContent = pp.year;
+    this.q('.pm-oa').hidden = !pp.oa;
     this.q('.pm-ti').textContent = pp.title;
     this.q('.pm-sum').textContent = pp.sum;
     this.q('.pm-au').innerHTML = pp.authors;
+    var aun = this.q('.pm-aunote'), note = this.q('.pm-note');
+    aun.textContent = pp.auNote || ''; aun.hidden = !pp.auNote;
+    note.textContent = pp.note || ''; note.hidden = !pp.note;
     var doi = this.q('.pm-doi');
     doi.href = pp.doi;
     doi.setAttribute('aria-label', '원문 보기: ' + pp.cite + ' (새 창)');
-    this.screen.setAttribute('aria-label', pp.name + ' 논문 20초 모션. ' + (reduced
+    this.root.style.setProperty('--pm-n', pp.scenes.length);
+    if (this.snd) this.snd.theme(pp.key);
+    this.screen.setAttribute('aria-label', pp.name + ' 논문 ' + Math.round(pp.total) + '초 모션. ' + (reduced
       ? '장면 버튼이나 좌우 화살표 키로 장면을 넘겨 볼 수 있습니다.'
       : '스페이스 키나 탭으로 재생과 일시정지, 좌우 화살표 키나 옆으로 밀어 장면 이동.'));
     this.chipsOl.innerHTML = '';
@@ -1106,6 +1578,7 @@
     this.t = reduced ? this.stillTime(i) : pp.starts[i] + (i === 0 ? XT.fade : 0.1);
     this.render();
     this.sync();
+    if (reduced && this.snd) this.snd.sfx('whoosh');
   };
 
   Player.prototype.sync = function () {
@@ -1124,6 +1597,7 @@
     this.playBtn.setAttribute('aria-label', showPause ? '일시정지' : '재생');
     this.root.className = this.root.className.replace(' pm-paused', '') + (showPause ? '' : ' pm-paused');
     this.root.classList.toggle('pm-held', this.userPaused && !this.debug);
+    if (this.snd) this.snd.active(this.playing);
   };
 
   Player.prototype.tick = function (ts) {
@@ -1131,9 +1605,11 @@
     var self = this, tot = PAPERS[this.pi].total;
     var dt = this.last ? Math.min(ts - this.last, 60) / 1000 : 0;
     this.last = ts;
+    var prev = this.t;
     this.t += dt;
     this.intro = Math.min(1, this.intro + dt / 0.6);
     if (this.t >= tot) this.t -= tot;
+    if (this.snd && dt > 0) this.snd.cues(prev, this.t, PAPERS[this.pi].cues, tot);
     this.render();
     this.raf = requestAnimationFrame(function (t2) { self.tick(t2); });
   };

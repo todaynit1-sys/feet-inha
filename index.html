@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preload" as="image" href="images/logo-mark.png">
-<link rel="stylesheet" href="assets/style.css?v=11">
+<link rel="stylesheet" href="assets/style.css?v=12">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"ResearchOrganization","name":"FEET Lab — Fine Energy & Environment Technology Laboratory","alternateName":"인하대학교 전기준 교수 연구실","url":"https://REPLACE-ME.github.io/feet-lab/","logo":"https://REPLACE-ME.github.io/feet-lab/images/logo-mark.png","parentOrganization":{"@type":"CollegeOrUniversity","name":"Inha University","url":"https://www.inha.ac.kr/"},"address":{"@type":"PostalAddress","streetAddress":"인하로 100","addressLocality":"인천광역시 미추홀구","addressCountry":"KR"},"email":"kjjeon@inha.ac.kr","employee":{"@type":"Person","name":"Ki-Joon Jeon","jobTitle":"Professor","email":"kjjeon@inha.ac.kr","affiliation":{"@type":"CollegeOrUniversity","name":"Inha University"}},"knowsAbout":["Black carbon","Airborne microplastics","Mobile air quality monitoring","Nanoparticle analysis","Electrocatalyst","2D materials"]}</script>
 </head>
 <body>
@@ -51,23 +51,21 @@
 
   <!-- 히어로 -->
   <section class="hero" aria-label="소개">
-    <canvas id="fx" aria-hidden="true"></canvas>
     <div class="wrap hero-grid">
-      <div>
-        <p class="eyebrow">Inha University · FEET Lab</p>
-        <h1 class="h-xl">안 보이는 것을<br><span class="grad-txt">끝까지</span> 측정합니다</h1>
-        <p class="lead">공장 굴뚝과 산업단지의 공기를 직접 재고, 오염이 어디서 나와 어디로 가는지 추적합니다.
-        그 측정 기술과 장비를 직접 만드는 인하대학교 환경공학과 FEET 연구실입니다.</p>
-        <div class="btns">
-          <a class="btn btn-p" href="research.html">연구 둘러보기
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
-          <a class="btn btn-g" href="join.html">들어오고 싶다면</a>
+      <p class="eyebrow">Inha University · FEET Lab</p>
+      <h1 class="h-xl">안 보이는 것을<br><span class="grad-txt">끝까지</span> 측정합니다</h1>
+      <!-- 연구실 소개 모션 (assets/hero-motion.js). JS 가 없으면 로고만 보인다 -->
+      <div class="hero-motion" data-hero-motion>
+        <div class="hm-screen">
+          <img class="hm-fallback" src="images/logo-mark.png" alt="" width="320" height="291" fetchpriority="high" decoding="async">
         </div>
       </div>
-      <div class="hero-art" aria-hidden="true">
-        <span class="ring r2"></span>
-        <span class="ring r1"></span>
-        <img src="images/logo-mark.png" alt="" width="320" height="291" fetchpriority="high" decoding="async">
+      <p class="lead">공장 굴뚝과 산업단지의 공기를 직접 재고, 오염이 어디서 나와 어디로 가는지 추적합니다.
+      그 측정 기술과 장비를 직접 만드는 인하대학교 환경공학과 FEET 연구실입니다.</p>
+      <div class="btns">
+        <a class="btn btn-p" href="research.html">연구 둘러보기
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-g" href="join.html">들어오고 싶다면</a>
       </div>
     </div>
     <div class="wrap hero-btm">
@@ -214,15 +212,18 @@
           </a>
           <a class="pm-mlink" href="publications.html#paper-amp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>모션으로 보기</a>
         </div>
-        <a class="pub-mini rv" href="https://doi.org/10.1016/j.atmosenv.2026.121807" target="_blank" rel="noopener">
-          <span class="y">2026 · ATMOS. ENVIRON.</span>
-          <span class="jr">모바일 기반 VOC 추적 관리</span>
-          <span class="ti"><em>Cheonwoong Kang</em> 외 · <em>Ki-Joon Jeon</em> 교신</span>
-        </a>
+        <div class="pub-mini has-motion rv">
+          <a class="pm-main" href="https://doi.org/10.1016/j.atmosenv.2026.121807" target="_blank" rel="noopener">
+            <span class="y">2026 · ATMOS. ENVIRON.</span>
+            <span class="jr">모바일 기반 VOC 추적 관리</span>
+            <span class="ti"><em>Cheonwoong Kang</em> 외 · <em>Ki-Joon Jeon</em> 교신</span>
+          </a>
+          <a class="pm-mlink" href="publications.html#paper-voc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>모션으로 보기</a>
+        </div>
       </div>
       <div class="btns rv" style="margin-top:32px">
         <a class="btn btn-g" href="publications.html">논문 전부 보기</a>
-        <a class="btn btn-g" href="publications.html#paper-bc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>논문 모션 보기</a>
+        <a class="btn btn-g" href="publications.html#paper-voc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>논문 모션 보기</a>
       </div>
     </div>
   </section>
@@ -298,7 +299,9 @@
   <a href="people.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="8.5" r="3.3"/><path d="M3.2 20a5.8 5.8 0 0 1 11.6 0"/><path d="M15.5 5.4a3.2 3.2 0 0 1 0 6.2M17.2 14.6A5.8 5.8 0 0 1 20.8 20"/></svg><span>사람들</span></a>
 </nav>
 
-<script src="assets/site.js?v=11" defer></script>
-<script src="assets/motion.js?v=11" defer></script>
+<script src="assets/site.js?v=12" defer></script>
+<script src="assets/motion-audio.js?v=12" defer></script>
+<script src="assets/motion.js?v=12" defer></script>
+<script src="assets/hero-motion.js?v=12" defer></script>
 </body>
 </html>
